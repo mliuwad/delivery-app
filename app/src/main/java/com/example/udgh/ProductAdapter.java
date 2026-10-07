@@ -75,8 +75,6 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
 
         // ✅ Xử lý nút Sửa - Mở trang ở chế độ SỬA
         holder.btnEdit.setOnClickListener(v -> {
-            product.setDocumentId(product.getProductId());
-
             Intent intent = new Intent(context, AddEditProductActivity.class);
             intent.putExtra("product", product);
             intent.putExtra("mode", "edit");  // ✅ Thêm flag chế độ sửa
@@ -90,8 +88,6 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
 
         // ✅ Click vào item - Mở trang ở chế độ XEM CHI TIẾT
         holder.itemView.setOnClickListener(v -> {
-            product.setDocumentId(product.getProductId());
-
             Intent intent = new Intent(context, AddEditProductActivity.class);
             intent.putExtra("product", product);
             intent.putExtra("mode", "view");  // ✅ Thêm flag chế độ xem
@@ -122,11 +118,11 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
     // ================== XÓA SẢN PHẨM TRONG FIRESTORE ==================
 
     private void deleteProduct(Product product, int position) {
-        String documentId = product.getDocumentId();
+        String productID = product.getProductId();
 
         FirebaseFirestore.getInstance()
                 .collection("PRODUCTS")
-                .document(documentId)
+                .document(productID)
                 .delete()
                 .addOnSuccessListener(aVoid -> {
                     productList.remove(position);

@@ -64,7 +64,7 @@ public class AddEditProductActivity extends AppCompatActivity {
     private FirebaseAuth mAuth;
     private Uri imageUri;
     private String imageUrl = "";
-    private String documentId = "";
+    private String productId = "";
     private boolean isEditMode = false;
     private String currentMode = ""; // "add", "edit", "view"
 
@@ -130,7 +130,7 @@ public class AddEditProductActivity extends AppCompatActivity {
         if (intent.hasExtra("product")) {
             Product product = (Product) intent.getSerializableExtra("product");
             if (product != null) {
-                documentId = product.getDocumentId();
+                productId = product.getProductId();
                 isEditMode = true;
                 loadProductData(product);
 
@@ -304,10 +304,10 @@ public class AddEditProductActivity extends AppCompatActivity {
                     int maxNumber = 0;
 
                     for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
-                        String documentId = document.getId();
-                        if (documentId != null && documentId.startsWith("P")) {
+                        String productId = document.getId();
+                        if (productId != null && productId.startsWith("P")) {
                             try {
-                                String numberStr = documentId.substring(1);
+                                String numberStr = productId.substring(1);
                                 int number = Integer.parseInt(numberStr);
                                 if (number > maxNumber) {
                                     maxNumber = number;
@@ -319,9 +319,9 @@ public class AddEditProductActivity extends AppCompatActivity {
                     }
 
                     int newNumber = maxNumber + 1;
-                    String newDocumentId = "P" + String.format("%03d", newNumber);
+                    String newProductId = "P" + String.format("%03d", newNumber);
 
-                    saveProductWithDocumentId(newDocumentId);
+                    saveProductWithProductId(newProductId);
 
                 })
                 .addOnFailureListener(e -> {
@@ -332,7 +332,7 @@ public class AddEditProductActivity extends AppCompatActivity {
 
     // ================== LƯU SẢN PHẨM VỚI DOCUMENT ID TỰ TẠO ==================
 
-    private void saveProductWithDocumentId(String documentId) {
+    private void saveProductWithProductId(String productId) {
         String productName = edtProductName.getText().toString().trim();
         String description = edtDescription.getText().toString().trim();
         String weightStr = edtWeight.getText().toString().trim();
@@ -390,9 +390,9 @@ public class AddEditProductActivity extends AppCompatActivity {
                 mAuth.getCurrentUser().getUid() : "unknown";
 
         if (imageUri != null) {
-            uploadImageAndSave(documentId, productName, description, weight, price, createdBy);
+            uploadImageAndSave(productId, productName, description, weight, price, createdBy);
         } else {
-            saveProductToFirestore(documentId, productName, description, weight, price, createdBy, imageUrl);
+            saveProductToFirestore(productId, productName, description, weight, price, createdBy, imageUrl);
         }
     }
 
@@ -483,7 +483,7 @@ public class AddEditProductActivity extends AppCompatActivity {
 
     // ================== UPLOAD ẢNH VÀ LƯU MỚI ==================
 
-    private void uploadImageAndSave(String documentId, String productName,
+    private void uploadImageAndSave(String productId, String productName,
                                     String description, double weight,
                                     double price, String createdBy) {
 
@@ -538,7 +538,7 @@ public class AddEditProductActivity extends AppCompatActivity {
 
                                 runOnUiThread(() -> {
                                     progressDialog.dismiss();
-                                    saveProductToFirestore(documentId, productName, description,
+                                    saveProductToFirestore(productId, productName, description,
                                             weight, price, createdBy, imageUrl);
                                 });
                             } else {
@@ -672,7 +672,7 @@ public class AddEditProductActivity extends AppCompatActivity {
 
     // ================== LƯU SẢN PHẨM MỚI VÀO FIRESTORE ==================
 
-    private void saveProductToFirestore(String documentId, String productName,
+    private void saveProductToFirestore(String productId, String productName,
                                         String description, double weight,
                                         double price, String createdBy,
                                         String imageUrl) {
@@ -689,15 +689,15 @@ public class AddEditProductActivity extends AppCompatActivity {
         product.put("price", price);
         product.put("createdBy", createdBy);
         product.put("createdAt", Timestamp.now());
-        product.put("picture", imageUrl);
+        product.put("imageUrl", imageUrl);
 
         db.collection("PRODUCTS")
-                .document(documentId)
+                .document(productId)
                 .set(product)
                 .addOnSuccessListener(aVoid -> {
                     progressDialog.dismiss();
                     Toast.makeText(AddEditProductActivity.this,
-                            "Thêm sản phẩm thành công!\nMã: " + documentId,
+                            "Thêm sản phẩm thành công!\nMã: " + productId,
                             Toast.LENGTH_LONG).show();
                     finish();
                 })
@@ -726,10 +726,10 @@ public class AddEditProductActivity extends AppCompatActivity {
         updates.put("weight", weight);
         updates.put("price", price);
         updates.put("createdBy", createdBy);
-        updates.put("picture", imageUrl);
+        updates.put("imageUrl", imageUrl);
 
         db.collection("PRODUCTS")
-                .document(documentId)
+                .document(productId)
                 .update(updates)
                 .addOnSuccessListener(aVoid -> {
                     progressDialog.dismiss();

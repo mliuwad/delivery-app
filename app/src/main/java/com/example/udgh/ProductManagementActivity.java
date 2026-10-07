@@ -166,17 +166,16 @@ public class ProductManagementActivity extends AppCompatActivity {
                     productListFull.clear();
 
                     for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
-                        String documentId = document.getId();
+                        String productId = document.getId();
                         String productName = document.getString("productName");
                         String description = document.getString("description");
-                        String imageUrl = document.getString("picture");
+                        String imageUrl = document.getString("imageUrl");
                         Double price = document.getDouble("price");
                         Double weight = document.getDouble("weight");
                         String createdBy = document.getString("createdBy");
 
                         Product product = new Product();
-                        product.setDocumentId(documentId);
-                        product.setProductId(documentId);
+                        product.setProductId(productId);
                         product.setProductName(productName);
                         product.setDescription(description);
                         product.setImageUrl(imageUrl);

@@ -88,7 +88,7 @@ public class AddProductToOrderDialog {
                         product.setProductId(doc.getId());
                         product.setProductName(doc.getString("productName"));
                         product.setPrice(doc.getDouble("price") != null ? doc.getDouble("price") : 0);
-                        product.setImageUrl(doc.getString("picture"));
+                        product.setImageUrl(doc.getString("imageUrl"));
                         product.setDescription(doc.getString("description"));
                         productList.add(product);
                     }
@@ -136,7 +136,7 @@ public class AddProductToOrderDialog {
                     product.getProductId(),
                     product.getProductName(),
                     product.getDescription() != null ? product.getDescription() : "",
-                    0,                              // weight (sẽ lấy sau)
+                    product.getWeight(),                              // weight (sẽ lấy sau)
                     product.getPrice(),
                     quantity
             );
