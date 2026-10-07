@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    app:cardCornerRadius="20dp">
+
+    ```
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="THANH TOÁN"
+            android:textStyle="bold"
+            android:textSize="18sp"/>
+
+        <TextView
+            android:id="@+id/txtGoodsValue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Giá trị hàng: 500.000đ"/>
+
+        <TextView
+            android:id="@+id/txtShippingFee"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Phí giao hàng: 25.000đ"/>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginVertical="12dp"
+            android:background="#E0E0E0"/>
+
+        <TextView
+            android:id="@+id/txtCOD"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Tổng COD: 525.000đ"
+            android:textColor="@color/primary"
+            android:textSize="22sp"
+            android:textStyle="bold"/>
+
+    </LinearLayout>
+    ```
+
+</com.google.android.material.card.MaterialCardView>

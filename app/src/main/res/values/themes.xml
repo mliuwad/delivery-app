@@ -1,0 +1,31 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. -->
+    <style name="Base.Theme.UDGH" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Customize your light theme here. -->
+        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+    </style>
+
+    <style name="Theme.UDGH" parent="Base.Theme.UDGH" />
+    <style name="ToolbarTitleStyle">
+        <item name="android:textSize">18sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@android:color/white</item>
+    </style>
+
+
+    <style name="SearchViewStyle" parent="Widget.AppCompat.SearchView">
+        <!-- Nền bo tròn -->
+        <item name="android:background">@drawable/bg_search</item>
+        <item name="android:padding">12dp</item>
+        <item name="android:textColor">@color/black</item>
+        <item name="android:textColorHint">@color/gray</item>
+        <!-- Icon tìm kiếm -->
+        <item name="searchIcon">@drawable/ic_search</item>
+        <!-- Icon xóa (clear) -->
+        <item name="closeIcon">@drawable/svg_close</item>
+        <!-- Ẩn icon submit (không cần) -->
+        <item name="submitBackground">@null</item>
+        <!-- Luôn hiển thị ô tìm kiếm -->
+        <item name="iconifiedByDefault">false</item>
+    </style>
+</resources>

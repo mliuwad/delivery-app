@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="SearchViewStyle" parent="Widget.AppCompat.SearchView">
+        <!-- Màu nền -->
+        <item name="android:background">@color/white</item>
+        <!-- Màu hint -->
+        <item name="android:textColorHint">@color/gray</item>
+        <!-- Màu chữ nhập -->
+        <item name="android:textColor">@color/black</item>
+        <!-- Icon search -->
+        <item name="android:iconTint">@color/black</item>
+    </style>
+</resources>

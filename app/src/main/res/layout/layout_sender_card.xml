@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="12dp"
+    app:cardCornerRadius="20dp">
+
+    ```
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="20dp">
+
+        <TextView
+            android:id="@+id/txtSenderTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="NGƯỜI GỬI"
+            android:textStyle="bold"
+            android:textSize="18sp"/>
+
+        <TextView
+            android:id="@+id/txtSenderName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Nguyễn Văn A"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            app:layout_constraintTop_toBottomOf="@id/txtSenderTitle"/>
+
+        <TextView
+            android:id="@+id/txtSenderPhone"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0909123456"
+            app:layout_constraintTop_toBottomOf="@id/txtSenderName"/>
+
+        <TextView
+            android:id="@+id/txtSenderAddress"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="123 Nguyễn Văn Cừ, Ninh Kiều, Cần Thơ"
+            app:layout_constraintTop_toBottomOf="@id/txtSenderPhone"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/btnCallSender"/>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnCallSender"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:text="☎"
+            app:backgroundTint="@color/white"
+            app:cornerRadius="28dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+    ```
+
+</com.google.android.material.card.MaterialCardView>

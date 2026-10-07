@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="12dp"
+    app:cardCornerRadius="20dp"
+    app:cardElevation="2dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="THÔNG TIN HÀNG HÓA"
+            android:textStyle="bold"
+            android:textSize="18sp"
+            android:textColor="@color/primary"/>
+
+        <!-- Card sản phẩm -->
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:orientation="horizontal">
+
+            <!-- Ảnh sản phẩm -->
+
+            <ImageView
+                android:id="@+id/imgProduct"
+                android:layout_width="90dp"
+                android:layout_height="90dp"
+                android:background="@drawable/bg_status_pending"
+                android:padding="6dp"
+                android:scaleType="centerCrop"
+                android:src="@drawable/box" />
+
+            <!-- Thông tin -->
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="14dp"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/txtProductName"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Tai nghe Bluetooth"
+                    android:textSize="18sp"
+                    android:textStyle="bold"/>
+
+                <TextView
+                    android:id="@+id/txtWeight"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="Khối lượng: 0.5 kg"
+                    android:textColor="@color/gray"/>
+
+                <TextView
+                    android:id="@+id/txtProductValue"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="Giá trị: 500.000đ"
+                    android:textStyle="bold"
+                    android:textColor="@color/primary"/>
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- Divider -->
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginVertical="14dp"
+            android:background="#EEEEEE"/>
+
+        <!-- Ghi chú -->
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Ghi chú"
+            android:textStyle="bold"
+            android:textColor="@color/gray"/>
+
+        <TextView
+            android:id="@+id/txtProductNote"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="Hàng dễ vỡ, vui lòng nhẹ tay."
+            android:textColor="@color/black"/>
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

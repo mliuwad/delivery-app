@@ -1,0 +1,16 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/menuProfile"
+        android:icon="@drawable/delivery_man"
+        android:title="Tài khoản"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/menuLogout"
+        android:icon="@drawable/sgv_logout"
+        android:title="Đăng xuất"
+        app:showAsAction="always" />
+
+</menu>
