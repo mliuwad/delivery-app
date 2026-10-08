@@ -256,7 +256,7 @@ public class HomeCustomerActivity extends AppCompatActivity {
                         product.setWeight(doc.getDouble("weight") != null ? doc.getDouble("weight") : 0);
                         product.setPrice(doc.getDouble("price") != null ? doc.getDouble("price") : 0);
                         product.setCreatedBy(doc.getString("createdBy"));
-                        product.setImageUrl(doc.getString("picture"));
+                        product.setImageUrl(doc.getString("imgUrl"));
                         productList.add(product);
                     }
                     productAdapter.notifyDataSetChanged();

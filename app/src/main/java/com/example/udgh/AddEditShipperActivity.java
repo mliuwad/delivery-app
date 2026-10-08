@@ -322,7 +322,7 @@ public class AddEditShipperActivity extends AppCompatActivity {
         db.collection("USERS")
                 .document(userId)
                 .collection("SHIPPER_DETAILS")
-                .document(userId) // dùng userId làm documentId cho SHIPPER_DETAILS
+                .document(userId)
                 .set(detailData)
                 .addOnSuccessListener(aVoid -> {
                     progressDialog.dismiss();

@@ -49,6 +49,7 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 
+
 public class AddEditProductActivity extends AppCompatActivity {
 
     // ================== KHAI BÁO ==================
@@ -69,7 +70,8 @@ public class AddEditProductActivity extends AppCompatActivity {
     private String currentMode = ""; // "add", "edit", "view"
 
     // API Key ImgBB
-    private static final String IMGBB_API_KEY = "dee690b746c3dc19370022b139ad6696";
+    private static final String IMGBB_API_KEY = BuildConfig.IMGBB_API_KEY;
+
 
     // ================== LAUNCHER CHỌN ẢNH ==================
 

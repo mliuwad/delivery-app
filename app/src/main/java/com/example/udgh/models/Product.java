@@ -5,7 +5,7 @@ import java.io.Serializable;
 
 public class Product implements Serializable {
 
-    //private String documentId; edit 7/10     // ID của document trong Firestore
+
     private String productId;       // Mã sản phẩm (SP001, SP002...)
     private String productName;     // Tên sản phẩm
     private String description;     // Mô tả sản phẩm
@@ -13,7 +13,7 @@ public class Product implements Serializable {
     private double price;           // Giá sản phẩm
     private String createdBy;       // Người tạo (UID)
     private Timestamp createdAt;    // Thời gian tạo
-    private String imageUrl;        // URL ảnh (tương ứng field "picture" trong Firestore)
+    private String imageUrl;        // URL ảnh
 
     // ================== CONSTRUCTOR ==================
 
@@ -36,15 +36,7 @@ public class Product implements Serializable {
     }
 
     // ================== GETTER & SETTER ==================
-/* edit 7/10
-    public String getDocumentId() {
-        return documentId;
-    }
 
-    public void setDocumentId(String documentId) {
-        this.documentId = documentId;
-    }
-*/
     public String getProductId() {
         return productId;
     }
@@ -110,22 +102,7 @@ public class Product implements Serializable {
     }
 
     // ================== TO STRING ==================
-/* sửa ngày 7/10
-    @Override
-    public String toString() {
-        return "Product{" +
-                "documentId='" + documentId + '\'' +
-                ", productId='" + productId + '\'' +
-                ", productName='" + productName + '\'' +
-                ", description='" + description + '\'' +
-                ", weight=" + weight +
-                ", price=" + price +
-                ", createdBy='" + createdBy + '\'' +
-                ", createdAt=" + createdAt +
-                ", imageUrl='" + imageUrl + '\'' +
-                '}';
-    }
-    */
+
     @Override
     public String toString() {
         return "Product{" +
