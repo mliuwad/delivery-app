@@ -80,6 +80,7 @@ public class AddProductToOrderDialog {
 
     private void loadProducts() {
         db.collection("PRODUCTS")
+                .whereEqualTo("isActive",true)
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
                     productList.clear();
@@ -90,6 +91,8 @@ public class AddProductToOrderDialog {
                         product.setPrice(doc.getDouble("price") != null ? doc.getDouble("price") : 0);
                         product.setImageUrl(doc.getString("imageUrl"));
                         product.setDescription(doc.getString("description"));
+                        product.setWeight(doc.getDouble("weight") != null ? doc.getDouble("weight") : 0);
+
                         productList.add(product);
                     }
                     adapter.notifyDataSetChanged();

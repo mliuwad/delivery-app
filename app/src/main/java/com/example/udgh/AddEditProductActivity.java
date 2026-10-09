@@ -66,6 +66,7 @@ public class AddEditProductActivity extends AppCompatActivity {
     private Uri imageUri;
     private String imageUrl = "";
     private String productId = "";
+
     private boolean isEditMode = false;
     private String currentMode = ""; // "add", "edit", "view"
 
@@ -339,6 +340,7 @@ public class AddEditProductActivity extends AppCompatActivity {
         String description = edtDescription.getText().toString().trim();
         String weightStr = edtWeight.getText().toString().trim();
         String priceStr = edtPrice.getText().toString().trim();
+
 
         if (TextUtils.isEmpty(productName)) {
             edtProductName.setError("Vui lòng nhập tên sản phẩm");
@@ -692,6 +694,7 @@ public class AddEditProductActivity extends AppCompatActivity {
         product.put("createdBy", createdBy);
         product.put("createdAt", Timestamp.now());
         product.put("imageUrl", imageUrl);
+        product.put("isActive",true);
 
         db.collection("PRODUCTS")
                 .document(productId)

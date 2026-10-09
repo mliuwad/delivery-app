@@ -104,9 +104,9 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
 
     private void showDeleteConfirmDialog(Product product, int position) {
         new MaterialAlertDialogBuilder(context)
-                .setTitle("Xóa sản phẩm")
-                .setMessage("Bạn có chắc chắn muốn xóa sản phẩm \"" + product.getProductName() + "\"?")
-                .setPositiveButton("Xóa", (dialog, which) -> {
+                .setTitle("Ngừng kinh doanh sản phẩm")
+                .setMessage("Bạn có chắc chắn muốn ngừng kinh doanh sản phẩm \"" + product.getProductName() + "\"?")
+                .setPositiveButton("Xác nhận", (dialog, which) -> {
                     deleteProduct(product, position);
                 })
                 .setNegativeButton("Hủy", (dialog, which) -> {
@@ -123,14 +123,13 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
         FirebaseFirestore.getInstance()
                 .collection("PRODUCTS")
                 .document(productID)
-                .delete()
+                .update("isAcitve",false)
                 .addOnSuccessListener(aVoid -> {
                     productList.remove(position);
                     notifyItemRemoved(position);
-                    notifyItemRangeChanged(position, productList.size());
 
                     Toast.makeText(context,
-                            "Đã xóa sản phẩm: " + product.getProductName(),
+                            "ĐĐã ngừng kinh doanh: " + product.getProductName(),
                             Toast.LENGTH_SHORT).show();
 
                     if (deleteListener != null) {
@@ -139,7 +138,7 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
                 })
                 .addOnFailureListener(e -> {
                     Toast.makeText(context,
-                            "Lỗi xóa sản phẩm: " + e.getMessage(),
+                            "Không thể ngừng kinh doanh: " + e.getMessage(),
                             Toast.LENGTH_LONG).show();
                 });
     }

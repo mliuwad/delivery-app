@@ -14,6 +14,7 @@ public class Product implements Serializable {
     private String createdBy;       // Người tạo (UID)
     private Timestamp createdAt;    // Thời gian tạo
     private String imageUrl;        // URL ảnh
+    private boolean isActive;
 
     // ================== CONSTRUCTOR ==================
 
@@ -24,7 +25,7 @@ public class Product implements Serializable {
     public Product(String productId, String productName,
                    String description, double weight,
                    double price, String createdBy,
-                   Timestamp createdAt, String imageUrl) {
+                   Timestamp createdAt, String imageUrl,boolean isActive) {
         this.productId = productId;
         this.productName = productName;
         this.description = description;
@@ -33,6 +34,7 @@ public class Product implements Serializable {
         this.createdBy = createdBy;
         this.createdAt = createdAt;
         this.imageUrl = imageUrl;
+        this.isActive = isActive;
     }
 
     // ================== GETTER & SETTER ==================
@@ -101,7 +103,15 @@ public class Product implements Serializable {
         this.imageUrl = imageUrl;
     }
 
-    // ================== TO STRING ==================
+    public boolean isActive() {;;
+        return isActive;
+    }
+
+    public void setActive(boolean active) {
+        isActive = active;
+    }
+
+// ================== TO STRING ==================
 
     @Override
     public String toString() {
