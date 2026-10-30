@@ -74,11 +74,11 @@
             android:name=".OrderManagementActivity"
             android:exported="false" />
         <activity
-            android:name=".AddEditProductActivity"
+            android:name=".activities.AddEditProductActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
         <activity
-            android:name=".ProductManagementActivity"
+            android:name=".activities.ProductManagementActivity"
             android:exported="false" />
         <activity
             android:name=".AddEditShipperActivity"

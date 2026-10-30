@@ -10,6 +10,15 @@
     <color name="gray">#757575</color>
     <color name="success">#4CAF50</color>
     <color name="warning">#FB8C00</color>
+    <!-- Màu Xanh Mint chủ đạo -->
+    <color name="mint_primary">#00D28A</color>
+    <color name="mint_primary_dark">#00A86B</color>
+    <color name="mint_primary_light">#E0F7EF</color>
+
+    <!-- Màu bổ trợ -->
+    <color name="bg_gray">#F8F9FA</color>
+    <color name="text_primary">#1A1A1A</color>
+    <color name="text_secondary">#757575</color>
 
 
     <color name="error">#EF5350</color>
