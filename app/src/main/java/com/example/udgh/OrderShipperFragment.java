@@ -136,14 +136,17 @@ public class OrderShipperFragment extends Fragment {
         if ("PENDING".equals(currentFilter)) {
             db.collection("ORDERS")
                     .whereIn("status", Arrays.asList("PENDING", "WAITING"))
-                    .whereEqualTo("shipperId", "")
                     .get()
                     .addOnSuccessListener(snapshots -> {
                         List<Order> tempList = new ArrayList<>();
                         for (QueryDocumentSnapshot doc : snapshots) {
-                            Order order = doc.toObject(Order.class);
-                            order.setOrderId(doc.getId());
-                            tempList.add(order);
+                            String assignedShipperId = doc.getString("shipperId");
+                            // Dữ liệu cũ có thể shipperId rỗng, null hoặc chưa tồn tại.
+                            if (TextUtils.isEmpty(assignedShipperId)) {
+                                Order order = doc.toObject(Order.class);
+                                order.setOrderId(doc.getId());
+                                tempList.add(order);
+                            }
                         }
                         processOrderList(tempList);
                     })
@@ -175,14 +178,16 @@ public class OrderShipperFragment extends Fragment {
         // Bước 1: Lấy đơn PENDING chưa nhận (shipperId rỗng)
         db.collection("ORDERS")
                 .whereIn("status", Arrays.asList("PENDING", "WAITING"))
-                .whereEqualTo("shipperId", "")
                 .get()
                 .addOnSuccessListener(pendingSnapshots -> {
                     List<Order> allOrders = new ArrayList<>();
                     for (QueryDocumentSnapshot doc : pendingSnapshots) {
-                        Order order = doc.toObject(Order.class);
-                        order.setOrderId(doc.getId());
-                        allOrders.add(order);
+                        String assignedShipperId = doc.getString("shipperId");
+                        if (TextUtils.isEmpty(assignedShipperId)) {
+                            Order order = doc.toObject(Order.class);
+                            order.setOrderId(doc.getId());
+                            allOrders.add(order);
+                        }
                     }
 
                     // Bước 2: Lấy đơn đã nhận của shipper này (tất cả status ngoại trừ PENDING)
