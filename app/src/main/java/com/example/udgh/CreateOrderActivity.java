@@ -321,6 +321,8 @@ public class CreateOrderActivity extends AppCompatActivity {
                         currentOrder = documentSnapshot.toObject(Order.class);
                         currentOrder.setOrderId(documentSnapshot.getId());
                         displayOrderInfo();
+                        // Cập nhật nút ngay khi tải được đơn hàng, không phụ thuộc ORDER_DETAILS.
+                        updateActionButton();
                         loadOrderDetailsSubCollection();
                     } else {
                         Toast.makeText(this, "Không tìm thấy đơn hàng", Toast.LENGTH_SHORT).show();
@@ -351,8 +353,6 @@ public class CreateOrderActivity extends AppCompatActivity {
 
                     if (currentOrder != null) {
                         updateTotalPriceViewMode();
-                        // Cập nhật nút hành động sau khi có danh sách sản phẩm
-                        updateActionButton();
                     }
                 })
                 .addOnFailureListener(e -> {
@@ -418,54 +418,44 @@ public class CreateOrderActivity extends AppCompatActivity {
         }
 
         btnAction.setEnabled(true);
+
         if (TextUtils.isEmpty(userRole)) {
-            // Chờ ViewModel tải role thật từ USERS/{userId}; không dùng role cache cũ.
+            // Chờ role thật từ USERS/{userId}.
             btnAction.setVisibility(View.GONE);
             return;
         }
 
         String status = currentOrder.getStatus();
         String role = userRole.trim().toUpperCase(Locale.ROOT);
+        String shipperId = currentOrder.getShipperId();
 
-        // ADMIN: ẩn nút
-        if ("ADMIN".equals(role)) {
-            btnAction.setVisibility(View.GONE);
-            return;
-        }
+        // Mặc định chỉ xem chi tiết, không có thao tác.
+        btnAction.setVisibility(View.GONE);
 
-        btnAction.setVisibility(View.VISIBLE);
-
-        // CREATOR: hiển thị nút HỦY ĐƠN nếu đơn chưa hoàn thành/hủy
         if ("CREATOR".equals(role)) {
-            if ("COMPLETED".equals(status) || "CANCELLED".equals(status)) {
-                btnAction.setVisibility(View.GONE);
-            } else {
+            // Creator chỉ được hủy đơn khi đơn còn chờ nhận.
+            if ("PENDING".equals(status) || "WAITING".equals(status)) {
                 btnAction.setText("HỦY ĐƠN");
+                btnAction.setVisibility(View.VISIBLE);
             }
             return;
         }
 
-        // SHIPPER: xử lý theo trạng thái đơn
         if ("SHIPPER".equals(role)) {
-            switch (status) {
-                case "PENDING":
-                case "WAITING":
-                    btnAction.setText("NHẬN ĐƠN");
-                    break;
-                case "DELIVERING":
-                    btnAction.setText("HOÀN THÀNH");
-                    break;
-                case "COMPLETED":
-                case "CANCELLED":
-                    btnAction.setVisibility(View.GONE);
-                    break;
-                default:
-                    btnAction.setVisibility(View.GONE);
-                    break;
+            // Chỉ nhận đơn đang chờ và chưa được shipper nào nhận.
+            if (("PENDING".equals(status) || "WAITING".equals(status))
+                    && (TextUtils.isEmpty(shipperId) || shipperId.trim().isEmpty())) {
+                btnAction.setText("NHẬN ĐƠN");
+                btnAction.setVisibility(View.VISIBLE);
+                return;
             }
-        } else {
-            // Nếu role không xác định, ẩn nút
-            btnAction.setVisibility(View.GONE);
+
+            // Chỉ shipper đã nhận đơn mới được xác nhận hoàn thành.
+            if ("DELIVERING".equals(status) && userId != null
+                    && userId.equals(shipperId)) {
+                btnAction.setText("HOÀN THÀNH");
+                btnAction.setVisibility(View.VISIBLE);
+            }
         }
     }
 
