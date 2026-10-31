@@ -16,7 +16,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
-import com.example.udgh.activities.OrderManagementActivity;
 import com.example.udgh.models.Order;
 import com.example.udgh.models.OrderDetail;
 import com.google.firebase.auth.FirebaseAuth;
@@ -25,6 +24,7 @@ import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -80,11 +80,11 @@ public class HomeShipperFragment extends Fragment {
         rvWaitingOrders.setLayoutManager(new LinearLayoutManager(getContext()));
         rvWaitingOrders.setAdapter(waitingOrderAdapter);
 
-        // Xem tất cả đơn chờ nhận
-        // Khi bấm "Xem tất cả", chỉ mở OrderManagementActivity, không gửi filter
+        // Mở tab đơn hàng riêng của Shipper, không đi qua màn quản lý đơn của Admin.
         txtViewAllWaiting.setOnClickListener(v -> {
-            Intent intent = new Intent(getActivity(), OrderManagementActivity.class);
-            startActivity(intent);
+            if (getActivity() instanceof HomeShipperActivity) {
+                ((HomeShipperActivity) getActivity()).openOrdersTab();
+            }
         });
 
         loadData();
@@ -122,11 +122,14 @@ public class HomeShipperFragment extends Fragment {
 
         // Đếm đơn chờ nhận (PENDING, shipperId rỗng)
         db.collection("ORDERS")
-                .whereEqualTo("status", "PENDING")
-                .whereEqualTo("shipperId", "")
+                .whereIn("status", Arrays.asList("PENDING", "WAITING"))
                 .get()
                 .addOnSuccessListener(query -> {
-                    txtWaiting.setText(String.valueOf(query.size()));
+                    int waitingCount = 0;
+                    for (QueryDocumentSnapshot doc : query) {
+                        if (TextUtils.isEmpty(doc.getString("shipperId"))) waitingCount++;
+                    }
+                    txtWaiting.setText(String.valueOf(waitingCount));
                 })
                 .addOnFailureListener(e -> txtWaiting.setText("0"));
 
@@ -170,16 +173,17 @@ public class HomeShipperFragment extends Fragment {
 
         // Lấy TẤT CẢ đơn PENDING, shipperId rỗng (không orderBy, không limit)
         db.collection("ORDERS")
-                .whereEqualTo("status", "PENDING")
-                .whereEqualTo("shipperId", "")
+                .whereIn("status", Arrays.asList("PENDING", "WAITING"))
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
-                    // Chuyển toàn bộ kết quả thành List<Order>
+                    // Lấy đơn chưa được shipper nhận, kể cả shipperId null hoặc chưa có field.
                     List<Order> allOrders = new ArrayList<>();
                     for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
-                        Order order = doc.toObject(Order.class);
-                        order.setOrderId(doc.getId());
-                        allOrders.add(order);
+                        if (TextUtils.isEmpty(doc.getString("shipperId"))) {
+                            Order order = doc.toObject(Order.class);
+                            order.setOrderId(doc.getId());
+                            allOrders.add(order);
+                        }
                     }
 
                     // Xáo trộn ngẫu nhiên
