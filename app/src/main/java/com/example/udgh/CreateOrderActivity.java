@@ -415,14 +415,15 @@ public class CreateOrderActivity extends AppCompatActivity {
             return;
         }
 
-        // Nếu role vẫn chưa có, thử lấy từ SharedPreferences (fallback)
+        btnAction.setEnabled(true);
         if (TextUtils.isEmpty(userRole)) {
-            SharedPreferences prefs = getSharedPreferences("MyAppPrefs", MODE_PRIVATE);
-            userRole = prefs.getString("role", "");
+            // Chờ ViewModel tải role thật từ USERS/{userId}; không dùng role cache cũ.
+            btnAction.setVisibility(View.GONE);
+            return;
         }
 
         String status = currentOrder.getStatus();
-        String role = userRole != null ? userRole.toUpperCase() : "";
+        String role = userRole.trim().toUpperCase(Locale.ROOT);
 
         // ADMIN: ẩn nút
         if ("ADMIN".equals(role)) {
