@@ -24,6 +24,9 @@ public class OrderViewModel extends ViewModel {
     private final MutableLiveData<String> errorMessage =
             new MutableLiveData<>();
 
+    private final MutableLiveData<String> userRole = new MutableLiveData<>();
+    private final MutableLiveData<OrderActionResult> actionResult = new MutableLiveData<>();
+
     private final MutableLiveData<Integer> totalOrdersCount =
             new MutableLiveData<>(0);
 
@@ -48,6 +51,43 @@ public class OrderViewModel extends ViewModel {
 
     public LiveData<String> getErrorMessage() {
         return errorMessage;
+    }
+
+    public LiveData<String> getUserRole() {
+        return userRole;
+    }
+
+    public LiveData<OrderActionResult> getActionResult() {
+        return actionResult;
+    }
+
+    public void loadUserRole(String userId) {
+        repository.loadUserRole(userId, (role, error) -> {
+            if (error == null) userRole.postValue(role);
+            else actionResult.postValue(new OrderActionResult(false, null, error));
+        });
+    }
+
+    public void updateOrderStatus(String orderId, String userId, String status) {
+        repository.updateOrderStatus(orderId, userId, status,
+                (success, newStatus, error) ->
+                        actionResult.postValue(new OrderActionResult(success, newStatus, error)));
+    }
+
+    public static class OrderActionResult {
+        private final boolean success;
+        private final String status;
+        private final Exception error;
+
+        public OrderActionResult(boolean success, String status, Exception error) {
+            this.success = success;
+            this.status = status;
+            this.error = error;
+        }
+
+        public boolean isSuccess() { return success; }
+        public String getStatus() { return status; }
+        public Exception getError() { return error; }
     }
 
     public LiveData<Integer> getTotalOrdersCount() {
