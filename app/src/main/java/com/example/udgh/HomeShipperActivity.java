@@ -105,6 +105,13 @@ public class HomeShipperActivity extends AppCompatActivity {
         });
     }
 
+    // Chuyển sang tab danh sách đơn hàng dành riêng cho Shipper.
+    public void openOrdersTab() {
+        if (bottomNavigation != null) {
+            bottomNavigation.setSelectedItemId(R.id.nav_order);
+        }
+    }
+
     private void loadFragment(Fragment fragment) {
         FragmentTransaction transaction = fragmentManager.beginTransaction();
         transaction.replace(R.id.container, fragment);
