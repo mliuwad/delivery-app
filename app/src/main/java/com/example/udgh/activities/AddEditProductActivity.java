@@ -36,7 +36,7 @@ import java.io.InputStream;
 
 public class AddEditProductActivity extends AppCompatActivity {
 
-    // ================== VIEW ==================
+
 
     private MaterialToolbar toolbar;
     private ImageView imgProduct;
@@ -51,7 +51,6 @@ public class AddEditProductActivity extends AppCompatActivity {
     private ScrollView scrollView;
     private View rootView;
 
-    // ================== DATA ==================
 
     private ProductViewModel productViewModel;
 
@@ -64,7 +63,7 @@ public class AddEditProductActivity extends AppCompatActivity {
 
     private ProgressDialog progressDialog;
 
-    // ================== CHỌN ẢNH ==================
+
 
     private final ActivityResultLauncher<Intent> imagePickerLauncher =
             registerForActivityResult(
@@ -91,7 +90,6 @@ public class AddEditProductActivity extends AppCompatActivity {
                     }
             );
 
-    // ================== ON CREATE ==================
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -256,7 +254,6 @@ public class AddEditProductActivity extends AppCompatActivity {
         edtPrice.setTextColor(textColor);
     }
 
-    // ================== LISTENER ==================
 
     private void setupListeners() {
         btnChooseImage.setOnClickListener(v -> openImagePicker());
@@ -279,7 +276,7 @@ public class AddEditProductActivity extends AppCompatActivity {
         imagePickerLauncher.launch(intent);
     }
 
-    // ================== THÊM SẢN PHẨM ==================
+    // THÊM SẢN PHẨM
 
     private void addProduct() {
         if (!validateInput()) {
@@ -312,7 +309,7 @@ public class AddEditProductActivity extends AppCompatActivity {
         productViewModel.addProduct(product, imageBytes);
     }
 
-    // ================== CẬP NHẬT SẢN PHẨM ==================
+    //CẬP NHẬT SẢN PHẨM
 
     private void updateProduct() {
         if (!validateInput()) {
@@ -378,7 +375,7 @@ public class AddEditProductActivity extends AppCompatActivity {
         return product;
     }
 
-    // ================== KIỂM TRA DỮ LIỆU ==================
+    // KIỂM TRA DỮ LIỆU
 
     private boolean validateInput() {
         String productName =
@@ -449,8 +446,7 @@ public class AddEditProductActivity extends AppCompatActivity {
         return true;
     }
 
-    // ================== ĐỌC ẢNH ==================
-
+    // ĐỌC ẢNH
     private byte[] readSelectedImage() {
         if (imageUri == null) {
             return null;
@@ -485,7 +481,7 @@ public class AddEditProductActivity extends AppCompatActivity {
         }
     }
 
-    // ================== QUAN SÁT VIEWMODEL ==================
+    // QUAN SÁT VIEWMODEL
 
     private void observeViewModel() {
         productViewModel.getIsLoading().observe(this, loading -> {
@@ -548,7 +544,7 @@ public class AddEditProductActivity extends AppCompatActivity {
         super.onDestroy();
     }
 
-    // ================== CUỘN MÀN HÌNH ==================
+    //CUỘN MÀN HÌNH
 
     private void scrollToView(View view) {
         scrollView.postDelayed(() -> {

@@ -71,7 +71,7 @@
             android:name=".OrderDetailActivity"
             android:exported="false" />
         <activity
-            android:name=".OrderManagementActivity"
+            android:name=".activities.OrderManagementActivity"
             android:exported="false" />
         <activity
             android:name=".activities.AddEditProductActivity"
