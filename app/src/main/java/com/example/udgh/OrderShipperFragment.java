@@ -24,6 +24,7 @@ import com.google.firebase.firestore.QueryDocumentSnapshot;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Arrays;
 
 public class OrderShipperFragment extends Fragment {
 
@@ -134,7 +135,7 @@ public class OrderShipperFragment extends Fragment {
         // Nếu là tab "Chờ giao" (PENDING) -> chỉ lấy đơn PENDING, shipperId rỗng
         if ("PENDING".equals(currentFilter)) {
             db.collection("ORDERS")
-                    .whereEqualTo("status", "PENDING")
+                    .whereIn("status", Arrays.asList("PENDING", "WAITING"))
                     .whereEqualTo("shipperId", "")
                     .get()
                     .addOnSuccessListener(snapshots -> {
@@ -173,7 +174,7 @@ public class OrderShipperFragment extends Fragment {
     private void fetchAllShipperOrders() {
         // Bước 1: Lấy đơn PENDING chưa nhận (shipperId rỗng)
         db.collection("ORDERS")
-                .whereEqualTo("status", "PENDING")
+                .whereIn("status", Arrays.asList("PENDING", "WAITING"))
                 .whereEqualTo("shipperId", "")
                 .get()
                 .addOnSuccessListener(pendingSnapshots -> {
@@ -191,7 +192,7 @@ public class OrderShipperFragment extends Fragment {
                             .addOnSuccessListener(shipperSnapshots -> {
                                 for (QueryDocumentSnapshot doc : shipperSnapshots) {
                                     String status = doc.getString("status");
-                                    if (!"PENDING".equals(status)) {
+                                    if (!"PENDING".equals(status) && !"WAITING".equals(status)) {
                                         Order order = doc.toObject(Order.class);
                                         order.setOrderId(doc.getId());
                                         allOrders.add(order);
