@@ -23,7 +23,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.udgh.activities.AddEditProductActivity;
 import com.example.udgh.models.Order;
 import com.example.udgh.models.OrderDetail;
-import com.example.udgh.viewmodel.OrderActionViewModel;
+import com.example.udgh.viewmodels.OrderViewModel;
 import androidx.lifecycle.ViewModelProvider;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
@@ -85,7 +85,7 @@ public class CreateOrderActivity extends AppCompatActivity {
     private FirebaseAuth mAuth;
     private String userId;
     private String userRole;
-    private OrderActionViewModel orderActionViewModel;
+    private OrderViewModel orderViewModel;
 
     // Data
     private double deliveryFee = 0;
@@ -209,9 +209,9 @@ public class CreateOrderActivity extends AppCompatActivity {
         rvSelectedProducts.setLayoutManager(new LinearLayoutManager(this));
         rvSelectedProducts.setAdapter(selectedProductAdapter);
 
-        orderActionViewModel = new ViewModelProvider(this).get(OrderActionViewModel.class);
+        orderViewModel = new ViewModelProvider(this).get(OrderViewModel.class);
         observeOrderActions();
-        orderActionViewModel.loadUserRole(userId);
+        orderViewModel.loadUserRole(userId);
 
         // ================== SỰ KIỆN ==================
 
@@ -267,12 +267,12 @@ public class CreateOrderActivity extends AppCompatActivity {
     // ================== LẤY ROLE TỪ FIRESTORE (LUÔN CẬP NHẬT) ==================
 
     private void observeOrderActions() {
-        orderActionViewModel.getUserRole().observe(this, role -> {
+        orderViewModel.getUserRole().observe(this, role -> {
             userRole = role;
             if (currentOrder != null) updateActionButton();
         });
 
-        orderActionViewModel.getActionResult().observe(this, result -> {
+        orderViewModel.getActionResult().observe(this, result -> {
             if (result == null) return;
 
             if (result.isSuccess()) {
@@ -489,7 +489,7 @@ public class CreateOrderActivity extends AppCompatActivity {
 
     private void updateOrderStatus(String newStatus) {
         if (TextUtils.isEmpty(orderId) || TextUtils.isEmpty(userId)
-                || orderActionViewModel == null) {
+                || orderViewModel == null) {
             btnAction.setEnabled(true);
             updateActionButton();
             return;
@@ -497,7 +497,7 @@ public class CreateOrderActivity extends AppCompatActivity {
 
         btnAction.setEnabled(false);
         btnAction.setText("Đang cập nhật...");
-        orderActionViewModel.updateOrderStatus(orderId, userId, newStatus);
+        orderViewModel.updateOrderStatus(orderId, userId, newStatus);
     }
 
     // ================== TIỆN ÍCH ==================
