@@ -269,7 +269,9 @@ public class CreateOrderActivity extends AppCompatActivity {
     private void observeOrderActions() {
         orderViewModel.getUserRole().observe(this, role -> {
             userRole = role;
+            Log.d("OrderDebug", "USER ROLE LOADED: [" + role + "]");
             if (currentOrder != null) updateActionButton();
+            else Log.d("OrderDebug", "ROLE loaded before order data; waiting for currentOrder");
         });
 
         orderViewModel.getActionResult().observe(this, result -> {
@@ -412,51 +414,80 @@ public class CreateOrderActivity extends AppCompatActivity {
     // ================== XỬ LÝ NÚT HÀNH ĐỘNG THEO ROLE ==================
 
     private void updateActionButton() {
+        Log.d("OrderDebug", "========== UPDATE ACTION BUTTON ==========");
+        Log.d("OrderDebug", "currentOrder is null: " + (currentOrder == null));
+        Log.d("OrderDebug", "userId is empty: " + TextUtils.isEmpty(userId));
+        Log.d("OrderDebug", "userRole: [" + userRole + "]");
+
         if (currentOrder == null) {
-            btnAction.setVisibility(View.GONE);
-            return;
-        }
-
-        btnAction.setEnabled(true);
-
-        if (TextUtils.isEmpty(userRole)) {
-            // Chờ role thật từ USERS/{userId}.
+            Log.d("OrderDebug", "RESULT: currentOrder is NULL -> HIDE BUTTON");
             btnAction.setVisibility(View.GONE);
             return;
         }
 
         String status = currentOrder.getStatus();
-        String role = userRole.trim().toUpperCase(Locale.ROOT);
+        String role = userRole == null ? "" : userRole.trim().toUpperCase(Locale.ROOT);
         String shipperId = currentOrder.getShipperId();
+        boolean shipperIdEmpty = TextUtils.isEmpty(shipperId)
+                || shipperId.trim().isEmpty();
+
+        Log.d("OrderDebug", "ORDER STATUS: [" + status + "]");
+        Log.d("OrderDebug", "ROLE AFTER NORMALIZE: [" + role + "]");
+        Log.d("OrderDebug", "ORDER HAS SHIPPER: " + !shipperIdEmpty);
+        Log.d("OrderDebug", "CURRENT USER IS ASSIGNED SHIPPER: "
+                + (userId != null && userId.equals(shipperId)));
+
+        btnAction.setEnabled(true);
+
+        if (TextUtils.isEmpty(role)) {
+            Log.d("OrderDebug", "RESULT: ROLE EMPTY -> HIDE BUTTON");
+            btnAction.setVisibility(View.GONE);
+            return;
+        }
 
         // Mặc định chỉ xem chi tiết, không có thao tác.
         btnAction.setVisibility(View.GONE);
 
         if ("CREATOR".equals(role)) {
-            // Creator chỉ được hủy đơn khi đơn còn chờ nhận.
+            Log.d("OrderDebug", "ROLE = CREATOR");
             if ("PENDING".equals(status) || "WAITING".equals(status)) {
+                Log.d("OrderDebug", "RESULT: SHOW CANCEL BUTTON");
                 btnAction.setText("HỦY ĐƠN");
                 btnAction.setVisibility(View.VISIBLE);
+            } else {
+                Log.d("OrderDebug", "RESULT: CREATOR STATUS NOT ALLOWED");
             }
             return;
         }
 
         if ("SHIPPER".equals(role)) {
-            // Chỉ nhận đơn đang chờ và chưa được shipper nào nhận.
-            if (("PENDING".equals(status) || "WAITING".equals(status))
-                    && (TextUtils.isEmpty(shipperId) || shipperId.trim().isEmpty())) {
+            Log.d("OrderDebug", "ROLE = SHIPPER");
+            boolean isPending = "PENDING".equals(status) || "WAITING".equals(status);
+            boolean isMyOrder = userId != null && userId.equals(shipperId);
+
+            Log.d("OrderDebug", "isPending: " + isPending);
+            Log.d("OrderDebug", "isUnassigned: " + shipperIdEmpty);
+            Log.d("OrderDebug", "isMyOrder: " + isMyOrder);
+
+            if (isPending && shipperIdEmpty) {
+                Log.d("OrderDebug", "RESULT: SHOW ACCEPT BUTTON");
                 btnAction.setText("NHẬN ĐƠN");
                 btnAction.setVisibility(View.VISIBLE);
                 return;
             }
 
-            // Chỉ shipper đã nhận đơn mới được xác nhận hoàn thành.
-            if ("DELIVERING".equals(status) && userId != null
-                    && userId.equals(shipperId)) {
+            if ("DELIVERING".equals(status) && isMyOrder) {
+                Log.d("OrderDebug", "RESULT: SHOW COMPLETE BUTTON");
                 btnAction.setText("HOÀN THÀNH");
                 btnAction.setVisibility(View.VISIBLE);
+                return;
             }
+
+            Log.d("OrderDebug", "RESULT: SHIPPER CONDITIONS NOT MATCHED -> HIDE BUTTON");
+            return;
         }
+
+        Log.d("OrderDebug", "RESULT: UNKNOWN ROLE -> HIDE BUTTON");
     }
 
     private void handleActionButton() {
