@@ -140,8 +140,8 @@ public class OrderRepository {
                 if (!"CREATOR".equals(role) || !userId.equals(creatorId)) {
                     throw new IllegalStateException("Bạn không có quyền hủy đơn này");
                 }
-                if ("COMPLETED".equals(status) || "CANCELLED".equals(status)) {
-                    throw new IllegalStateException("Đơn hàng đã kết thúc");
+                if (!"PENDING".equals(status) && !"WAITING".equals(status)) {
+                    throw new IllegalStateException("Chỉ có thể hủy đơn khi đơn đang chờ nhận");
                 }
                 transaction.update(orderRef, "status", "CANCELLED");
                 return "CANCELLED";
