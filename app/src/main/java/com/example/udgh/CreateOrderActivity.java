@@ -500,7 +500,55 @@ public class CreateOrderActivity extends AppCompatActivity {
         btnAction.setEnabled(false);
         btnAction.setText("Đang cập nhật...");
 
-        final Timestamp completedAt = "COMPLETED".equals(newStatus) ? Timestamp.now() : null;
+        if ("COMPLETED".equals(newStatus)
+                && currentOrder != null
+                && !TextUtils.isEmpty(currentOrder.getShipperId())) {
+            // Android Firestore Transaction chỉ đọc được DocumentReference,
+            // không hỗ trợ transaction.get(Query). Tìm salary document trước,
+            // sau đó đọc/cập nhật document cụ thể bên trong transaction.
+            Timestamp completedAt = Timestamp.now();
+            Calendar cal = Calendar.getInstance();
+            cal.setTime(completedAt.toDate());
+            int month = cal.get(Calendar.MONTH) + 1;
+            int year = cal.get(Calendar.YEAR);
+            String shipperId = currentOrder.getShipperId();
+
+            db.collection("SALARIES")
+                    .whereEqualTo("shipperID", shipperId)
+                    .whereEqualTo("month", month)
+                    .whereEqualTo("year", year)
+                    .limit(1)
+                    .get()
+                    .addOnSuccessListener(snapshots -> {
+                        com.google.firebase.firestore.DocumentReference salaryRef;
+                        if (!snapshots.isEmpty()) {
+                            salaryRef = snapshots.getDocuments().get(0).getReference();
+                        } else {
+                            // ID ổn định theo shipper + tháng giúp các transaction đồng thời
+                            // cùng ghi vào một document, tránh tạo nhiều bảng lương tháng.
+                            String salaryId = "SL_" + shipperId + "_" + year
+                                    + String.format(Locale.US, "%02d", month);
+                            salaryRef = db.collection("SALARIES").document(salaryId);
+                        }
+                        runOrderStatusTransaction(newStatus, completedAt, salaryRef);
+                    })
+                    .addOnFailureListener(e -> {
+                        Toast.makeText(this, "Không thể kiểm tra bảng lương: " + e.getMessage(),
+                                Toast.LENGTH_LONG).show();
+                        btnAction.setEnabled(true);
+                        updateActionButton();
+                    });
+            return;
+        }
+
+        runOrderStatusTransaction(newStatus, null, null);
+    }
+
+    private void runOrderStatusTransaction(
+            String newStatus,
+            Timestamp completedAt,
+            com.google.firebase.firestore.DocumentReference salaryRef) {
+
         final com.google.firebase.firestore.DocumentReference orderRef =
                 db.collection("ORDERS").document(orderId);
 
@@ -515,8 +563,7 @@ public class CreateOrderActivity extends AppCompatActivity {
             String assignedShipperId = orderDoc.getString("shipperId");
 
             if ("CANCELLED".equals(newStatus)) {
-                if (!"CREATOR".equalsIgnoreCase(userRole)
-                        || !userId.equals(creatorId)) {
+                if (!"CREATOR".equalsIgnoreCase(userRole) || !userId.equals(creatorId)) {
                     throw new IllegalStateException("Bạn không có quyền hủy đơn hàng này");
                 }
                 if ("COMPLETED".equals(latestStatus) || "CANCELLED".equals(latestStatus)) {
@@ -554,6 +601,9 @@ public class CreateOrderActivity extends AppCompatActivity {
                 if (TextUtils.isEmpty(assignedShipperId) || !userId.equals(assignedShipperId)) {
                     throw new IllegalStateException("Đơn hàng này không được giao cho tài khoản của bạn");
                 }
+                if (completedAt == null || salaryRef == null) {
+                    throw new IllegalStateException("Thiếu dữ liệu thời điểm hoàn thành hoặc bảng lương");
+                }
 
                 Map<String, Object> orderUpdates = new HashMap<>();
                 orderUpdates.put("status", "COMPLETED");
@@ -561,53 +611,25 @@ public class CreateOrderActivity extends AppCompatActivity {
 
                 boolean salaryAlreadyAdded = Boolean.TRUE.equals(orderDoc.getBoolean("salaryAdded"));
                 if (!salaryAlreadyAdded) {
-                    Calendar cal = Calendar.getInstance();
-                    cal.setTime(completedAt.toDate());
-                    int month = cal.get(Calendar.MONTH) + 1;
-                    int year = cal.get(Calendar.YEAR);
+                    // Đọc salary document cụ thể trước khi thực hiện bất kỳ thao tác ghi nào.
+                    com.google.firebase.firestore.DocumentSnapshot salaryDoc = transaction.get(salaryRef);
                     double fee = orderDoc.getDouble("deliveryFee") != null
                             ? orderDoc.getDouble("deliveryFee") : 0d;
 
-                    com.google.firebase.firestore.Query salaryQuery = db.collection("SALARIES")
-                            .whereEqualTo("shipperID", assignedShipperId)
-                            .whereEqualTo("month", month)
-                            .whereEqualTo("year", year);
-
-                    com.google.firebase.firestore.QuerySnapshot salaryResults = transaction.get(salaryQuery);
-                    com.google.firebase.firestore.DocumentReference salaryRef;
-
-                    if (!salaryResults.isEmpty()) {
-                        salaryRef = salaryResults.getDocuments().get(0).getReference();
-                        com.google.firebase.firestore.DocumentSnapshot salaryDoc =
-                                salaryResults.getDocuments().get(0);
+                    if (salaryDoc.exists()) {
                         Long oldOrders = salaryDoc.getLong("totalOrders");
                         Double oldSalary = salaryDoc.getDouble("totalSalary");
-
                         Map<String, Object> salaryUpdates = new HashMap<>();
                         salaryUpdates.put("totalOrders", (oldOrders != null ? oldOrders : 0L) + 1L);
                         salaryUpdates.put("totalSalary", (oldSalary != null ? oldSalary : 0d) + fee);
                         transaction.update(salaryRef, salaryUpdates);
                     } else {
-                        // Giữ nguyên quy ước mã SLxxx hiện tại, đồng thời tạo mã trong transaction.
-                        com.google.firebase.firestore.QuerySnapshot allSalaries =
-                                transaction.get(db.collection("SALARIES"));
-                        int maxNumber = 0;
-                        for (com.google.firebase.firestore.DocumentSnapshot salaryDoc : allSalaries.getDocuments()) {
-                            String id = salaryDoc.getId();
-                            if (id != null && id.startsWith("SL")) {
-                                try {
-                                    maxNumber = Math.max(maxNumber, Integer.parseInt(id.substring(2)));
-                                } catch (NumberFormatException ignored) {
-                                }
-                            }
-                        }
-                        String newSalaryId = String.format(Locale.getDefault(), "SL%03d", maxNumber + 1);
-                        salaryRef = db.collection("SALARIES").document(newSalaryId);
-
+                        Calendar cal = Calendar.getInstance();
+                        cal.setTime(completedAt.toDate());
                         Map<String, Object> salaryData = new HashMap<>();
                         salaryData.put("shipperID", assignedShipperId);
-                        salaryData.put("month", month);
-                        salaryData.put("year", year);
+                        salaryData.put("month", cal.get(Calendar.MONTH) + 1);
+                        salaryData.put("year", cal.get(Calendar.YEAR));
                         salaryData.put("totalOrders", 1);
                         salaryData.put("totalSalary", fee);
                         salaryData.put("salaryPerOrder", 0);
