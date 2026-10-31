@@ -84,7 +84,8 @@ public class CreateOrderActivity extends AppCompatActivity {
     private FirebaseFirestore db;
     private FirebaseAuth mAuth;
     private String userId;
-    private String userRole;\n    private OrderActionViewModel orderActionViewModel;
+    private String userRole;
+    private OrderActionViewModel orderActionViewModel;
 
     // Data
     private double deliveryFee = 0;
@@ -150,9 +151,6 @@ public class CreateOrderActivity extends AppCompatActivity {
             userId = mAuth.getCurrentUser().getUid();
         }
 
-        // Luôn tải role mới nhất từ Firestore (bỏ qua giá trị cũ trong SharedPreferences)
-        loadUserRoleFromFirestore();
-
         // Kiểm tra nếu có orderId -> chế độ xem chi tiết
         orderId = getIntent().getStringExtra("orderId");
         isViewMode = !TextUtils.isEmpty(orderId);
@@ -211,7 +209,11 @@ public class CreateOrderActivity extends AppCompatActivity {
         rvSelectedProducts.setLayoutManager(new LinearLayoutManager(this));
         rvSelectedProducts.setAdapter(selectedProductAdapter);
 
-        orderActionViewModel = new ViewModelProvider(this).get(OrderActionViewModel.class);\n        observeOrderActions();\n        orderActionViewModel.loadUserRole(userId);\n\n        // ================== SỰ KIỆN ==================
+        orderActionViewModel = new ViewModelProvider(this).get(OrderActionViewModel.class);
+        observeOrderActions();
+        orderActionViewModel.loadUserRole(userId);
+
+        // ================== SỰ KIỆN ==================
 
         btnChooseProduct.setOnClickListener(v -> {
             if (!isViewMode) showProductSelectionDialog();
