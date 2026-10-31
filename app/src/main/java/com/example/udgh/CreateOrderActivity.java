@@ -23,6 +23,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.udgh.activities.AddEditProductActivity;
 import com.example.udgh.models.Order;
 import com.example.udgh.models.OrderDetail;
+import com.example.udgh.viewmodel.OrderActionViewModel;
+import androidx.lifecycle.ViewModelProvider;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
@@ -82,7 +84,7 @@ public class CreateOrderActivity extends AppCompatActivity {
     private FirebaseFirestore db;
     private FirebaseAuth mAuth;
     private String userId;
-    private String userRole; // sẽ được cập nhật từ Firestore mỗi lần
+    private String userRole;\n    private OrderActionViewModel orderActionViewModel;
 
     // Data
     private double deliveryFee = 0;
@@ -209,7 +211,7 @@ public class CreateOrderActivity extends AppCompatActivity {
         rvSelectedProducts.setLayoutManager(new LinearLayoutManager(this));
         rvSelectedProducts.setAdapter(selectedProductAdapter);
 
-        // ================== SỰ KIỆN ==================
+        orderActionViewModel = new ViewModelProvider(this).get(OrderActionViewModel.class);\n        observeOrderActions();\n        orderActionViewModel.loadUserRole(userId);\n\n        // ================== SỰ KIỆN ==================
 
         btnChooseProduct.setOnClickListener(v -> {
             if (!isViewMode) showProductSelectionDialog();
@@ -262,34 +264,25 @@ public class CreateOrderActivity extends AppCompatActivity {
 
     // ================== LẤY ROLE TỪ FIRESTORE (LUÔN CẬP NHẬT) ==================
 
-    private void loadUserRoleFromFirestore() {
-        if (TextUtils.isEmpty(userId)) {
-            return;
-        }
-        db.collection("USERS")
-                .document(userId)
-                .get()
-                .addOnSuccessListener(doc -> {
-                    if (doc.exists()) {
-                        String roleFromDb = doc.getString("role");
-                        if (!TextUtils.isEmpty(roleFromDb)) {
-                            userRole = roleFromDb;
-                            // Lưu vào SharedPreferences để dùng sau này
-                            SharedPreferences prefs = getSharedPreferences("MyAppPrefs", MODE_PRIVATE);
-                            prefs.edit().putString("role", userRole).apply();
+    private void observeOrderActions() {
+        orderActionViewModel.getUserRole().observe(this, role -> {
+            userRole = role;
+            if (currentOrder != null) updateActionButton();
+        });
 
-                            // Nếu đang ở chế độ xem chi tiết và đã có đơn hàng, cập nhật lại nút
-                            if (isViewMode && currentOrder != null) {
-                                updateActionButton();
-                            }
-                        }
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    // Nếu không lấy được, thử lấy từ SharedPreferences (fallback)
-                    SharedPreferences prefs = getSharedPreferences("MyAppPrefs", MODE_PRIVATE);
-                    userRole = prefs.getString("role", "");
-                });
+        orderActionViewModel.getActionResult().observe(this, result -> {
+            if (result == null) return;
+
+            if (result.isSuccess()) {
+                loadOrderDetails();
+            } else {
+                btnAction.setEnabled(true);
+                updateActionButton();
+                // Lỗi được giữ trong ViewModel; không bắt buộc hiển thị Toast.
+                Log.e("CreateOrderActivity", "Order action failed",
+                        result.getError());
+            }
+        });
     }
 
     // ================== CÀI ĐẶT CHẾ ĐỘ TẠO MỚI ==================
@@ -492,170 +485,16 @@ public class CreateOrderActivity extends AppCompatActivity {
     // ================== CẬP NHẬT TRẠNG THÁI + LƯƠNG (THEO THÁNG NĂM) ==================
 
     private void updateOrderStatus(String newStatus) {
-        if (TextUtils.isEmpty(orderId) || TextUtils.isEmpty(userId)) {
-            Toast.makeText(this, "Không xác định được đơn hàng hoặc tài khoản", Toast.LENGTH_SHORT).show();
+        if (TextUtils.isEmpty(orderId) || TextUtils.isEmpty(userId)
+                || orderActionViewModel == null) {
+            btnAction.setEnabled(true);
+            updateActionButton();
             return;
         }
 
         btnAction.setEnabled(false);
         btnAction.setText("Đang cập nhật...");
-
-        if ("COMPLETED".equals(newStatus)
-                && currentOrder != null
-                && !TextUtils.isEmpty(currentOrder.getShipperId())) {
-            // Android Firestore Transaction chỉ đọc được DocumentReference,
-            // không hỗ trợ transaction.get(Query). Tìm salary document trước,
-            // sau đó đọc/cập nhật document cụ thể bên trong transaction.
-            Timestamp completedAt = Timestamp.now();
-            Calendar cal = Calendar.getInstance();
-            cal.setTime(completedAt.toDate());
-            int month = cal.get(Calendar.MONTH) + 1;
-            int year = cal.get(Calendar.YEAR);
-            String shipperId = currentOrder.getShipperId();
-
-            db.collection("SALARIES")
-                    .whereEqualTo("shipperID", shipperId)
-                    .whereEqualTo("month", month)
-                    .whereEqualTo("year", year)
-                    .limit(1)
-                    .get()
-                    .addOnSuccessListener(snapshots -> {
-                        com.google.firebase.firestore.DocumentReference salaryRef;
-                        if (!snapshots.isEmpty()) {
-                            salaryRef = snapshots.getDocuments().get(0).getReference();
-                        } else {
-                            // ID ổn định theo shipper + tháng giúp các transaction đồng thời
-                            // cùng ghi vào một document, tránh tạo nhiều bảng lương tháng.
-                            String salaryId = "SL_" + shipperId + "_" + year
-                                    + String.format(Locale.US, "%02d", month);
-                            salaryRef = db.collection("SALARIES").document(salaryId);
-                        }
-                        runOrderStatusTransaction(newStatus, completedAt, salaryRef);
-                    })
-                    .addOnFailureListener(e -> {
-                        Toast.makeText(this, "Không thể kiểm tra bảng lương: " + e.getMessage(),
-                                Toast.LENGTH_LONG).show();
-                        btnAction.setEnabled(true);
-                        updateActionButton();
-                    });
-            return;
-        }
-
-        runOrderStatusTransaction(newStatus, null, null);
-    }
-
-    private void runOrderStatusTransaction(
-            String newStatus,
-            Timestamp completedAt,
-            com.google.firebase.firestore.DocumentReference salaryRef) {
-
-        final com.google.firebase.firestore.DocumentReference orderRef =
-                db.collection("ORDERS").document(orderId);
-
-        db.runTransaction(transaction -> {
-            com.google.firebase.firestore.DocumentSnapshot orderDoc = transaction.get(orderRef);
-            if (!orderDoc.exists()) {
-                throw new IllegalStateException("Đơn hàng không còn tồn tại");
-            }
-
-            String latestStatus = orderDoc.getString("status");
-            String creatorId = orderDoc.getString("creatorId");
-            String assignedShipperId = orderDoc.getString("shipperId");
-
-            if ("CANCELLED".equals(newStatus)) {
-                if (!"CREATOR".equalsIgnoreCase(userRole) || !userId.equals(creatorId)) {
-                    throw new IllegalStateException("Bạn không có quyền hủy đơn hàng này");
-                }
-                if ("COMPLETED".equals(latestStatus) || "CANCELLED".equals(latestStatus)) {
-                    throw new IllegalStateException("Đơn hàng đã kết thúc, không thể hủy");
-                }
-                transaction.update(orderRef, "status", "CANCELLED");
-                return "CANCELLED";
-            }
-
-            if ("DELIVERING".equals(newStatus)) {
-                if (!"SHIPPER".equalsIgnoreCase(userRole)) {
-                    throw new IllegalStateException("Chỉ shipper mới được nhận đơn");
-                }
-                if (!"PENDING".equals(latestStatus) && !"WAITING".equals(latestStatus)) {
-                    throw new IllegalStateException("Đơn hàng vừa được người khác nhận hoặc không còn chờ nhận");
-                }
-                if (!TextUtils.isEmpty(assignedShipperId)) {
-                    throw new IllegalStateException("Đơn hàng đã có shipper nhận");
-                }
-
-                Map<String, Object> updates = new HashMap<>();
-                updates.put("status", "DELIVERING");
-                updates.put("shipperId", userId);
-                transaction.update(orderRef, updates);
-                return "DELIVERING";
-            }
-
-            if ("COMPLETED".equals(newStatus)) {
-                if (!"SHIPPER".equalsIgnoreCase(userRole)) {
-                    throw new IllegalStateException("Chỉ shipper mới được hoàn thành đơn");
-                }
-                if (!"DELIVERING".equals(latestStatus)) {
-                    throw new IllegalStateException("Đơn hàng không ở trạng thái đang giao");
-                }
-                if (TextUtils.isEmpty(assignedShipperId) || !userId.equals(assignedShipperId)) {
-                    throw new IllegalStateException("Đơn hàng này không được giao cho tài khoản của bạn");
-                }
-                if (completedAt == null || salaryRef == null) {
-                    throw new IllegalStateException("Thiếu dữ liệu thời điểm hoàn thành hoặc bảng lương");
-                }
-
-                Map<String, Object> orderUpdates = new HashMap<>();
-                orderUpdates.put("status", "COMPLETED");
-                orderUpdates.put("deliveredAt", completedAt);
-
-                boolean salaryAlreadyAdded = Boolean.TRUE.equals(orderDoc.getBoolean("salaryAdded"));
-                if (!salaryAlreadyAdded) {
-                    // Đọc salary document cụ thể trước khi thực hiện bất kỳ thao tác ghi nào.
-                    com.google.firebase.firestore.DocumentSnapshot salaryDoc = transaction.get(salaryRef);
-                    double fee = orderDoc.getDouble("deliveryFee") != null
-                            ? orderDoc.getDouble("deliveryFee") : 0d;
-
-                    if (salaryDoc.exists()) {
-                        Long oldOrders = salaryDoc.getLong("totalOrders");
-                        Double oldSalary = salaryDoc.getDouble("totalSalary");
-                        Map<String, Object> salaryUpdates = new HashMap<>();
-                        salaryUpdates.put("totalOrders", (oldOrders != null ? oldOrders : 0L) + 1L);
-                        salaryUpdates.put("totalSalary", (oldSalary != null ? oldSalary : 0d) + fee);
-                        transaction.update(salaryRef, salaryUpdates);
-                    } else {
-                        Calendar cal = Calendar.getInstance();
-                        cal.setTime(completedAt.toDate());
-                        Map<String, Object> salaryData = new HashMap<>();
-                        salaryData.put("shipperID", assignedShipperId);
-                        salaryData.put("month", cal.get(Calendar.MONTH) + 1);
-                        salaryData.put("year", cal.get(Calendar.YEAR));
-                        salaryData.put("totalOrders", 1);
-                        salaryData.put("totalSalary", fee);
-                        salaryData.put("salaryPerOrder", 0);
-                        salaryData.put("paymentStatus", "PENDING");
-                        salaryData.put("paymentDate", null);
-                        transaction.set(salaryRef, salaryData);
-                    }
-
-                    orderUpdates.put("salaryAdded", true);
-                }
-
-                transaction.update(orderRef, orderUpdates);
-                return "COMPLETED";
-            }
-
-            throw new IllegalStateException("Trạng thái cập nhật không hợp lệ");
-        }).addOnSuccessListener(result -> {
-            Toast.makeText(this, "Cập nhật trạng thái thành công", Toast.LENGTH_SHORT).show();
-            loadOrderDetails();
-        }).addOnFailureListener(e -> {
-            String message = e.getMessage();
-            if (TextUtils.isEmpty(message)) message = "Không thể cập nhật đơn hàng";
-            Toast.makeText(this, message, Toast.LENGTH_LONG).show();
-            btnAction.setEnabled(true);
-            updateActionButton();
-        });
+        orderActionViewModel.updateOrderStatus(orderId, userId, newStatus);
     }
 
     // ================== TIỆN ÍCH ==================
