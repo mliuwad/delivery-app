@@ -244,7 +244,7 @@ public class HomeCustomerActivity extends AppCompatActivity {
     private void loadProducts() {
         if (TextUtils.isEmpty(userId)) return;
 
-        // ✅ Lấy tất cả sản phẩm (không lọc theo createdBy)
+        // Chỉ lấy sản phẩm đang kinh doanh của shop hiện tại
         db.collection("PRODUCTS")
                 .whereEqualTo("createdBy", userId)
                 .whereEqualTo("isActive", true)
