@@ -2,6 +2,9 @@ package com.example.udgh;
 
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.widget.EditText;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -10,7 +13,6 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.widget.SearchView;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -31,7 +33,7 @@ public class CreatorOrderFragment extends Fragment {
     private FirebaseFirestore db;
     private String userId;
     private TabLayout tabs;
-    private SearchView searchView;
+    private EditText searchView;
     private RecyclerView rvOrders;
     private TextView txtTotal;
     private OrderAdapter adapter;
@@ -67,9 +69,13 @@ public class CreatorOrderFragment extends Fragment {
             @Override public void onTabUnselected(TabLayout.Tab tab) {}
             @Override public void onTabReselected(TabLayout.Tab tab) {}
         });
-        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-            @Override public boolean onQueryTextSubmit(String query) { keyword = query; applyFilters(); return true; }
-            @Override public boolean onQueryTextChange(String newText) { keyword = newText; applyFilters(); return true; }
+        searchView.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                keyword = s.toString();
+                applyFilters();
+            }
+            @Override public void afterTextChanged(Editable s) {}
         });
         loadOrders();
         return view;
