@@ -31,8 +31,6 @@ import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
@@ -81,7 +79,6 @@ public class CreateOrderActivity extends AppCompatActivity {
     private LinearLayout layoutDeliveredAt;
 
     // Firebase
-    private FirebaseFirestore db;
     private FirebaseAuth mAuth;
     private String userId;
     private String userRole;
@@ -142,7 +139,6 @@ public class CreateOrderActivity extends AppCompatActivity {
             return insets;
         });
 
-        db = FirebaseFirestore.getInstance();
         mAuth = FirebaseAuth.getInstance();
 
         // Lấy userId từ SharedPreferences hoặc FirebaseAuth
@@ -268,6 +264,46 @@ public class CreateOrderActivity extends AppCompatActivity {
     // ================== LẤY ROLE TỪ FIRESTORE (LUÔN CẬP NHẬT) ==================
 
     private void observeOrderActions() {
+        orderViewModel.getSelectedOrder().observe(this, order -> {
+            if (order == null) return;
+            currentOrder = order;
+            displayOrderInfo();
+            updateActionButton();
+
+            selectedProductList.clear();
+            if (order.getOrderDetails() != null) {
+                selectedProductList.addAll(order.getOrderDetails());
+            }
+            selectedProductAdapter.notifyDataSetChanged();
+            updateProductUI();
+            updateTotalPriceViewMode();
+        });
+
+        orderViewModel.getErrorMessage().observe(this, message -> {
+            if (message != null && !message.trim().isEmpty()) {
+                Toast.makeText(this, "Lỗi tải đơn hàng: " + message, Toast.LENGTH_LONG).show();
+                finish();
+            }
+        });
+
+        orderViewModel.getCreateOrderResult().observe(this, result -> {
+            if (result == null) return;
+            isCreating = false;
+            if (result.isSuccess()) {
+                Toast.makeText(this, "Tạo đơn hàng " + orderId + " thành công!",
+                        Toast.LENGTH_LONG).show();
+                finish();
+            } else {
+                btnAction.setEnabled(true);
+                btnAction.setText("XÁC NHẬN TẠO ĐƠN");
+                String message = result.getError() != null
+                        ? result.getError().getMessage()
+                        : "Không thể tạo đơn hàng";
+                Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+                Log.e("CreateOrderActivity", "Create order failed", result.getError());
+            }
+        });
+
         orderViewModel.getUserRole().observe(this, role -> {
             userRole = role;
             Log.d("OrderDebug", "USER ROLE LOADED: [" + role + "]");
@@ -307,60 +343,12 @@ public class CreateOrderActivity extends AppCompatActivity {
 
     private void loadOrderDetails() {
         orderInfoLayout.setVisibility(View.VISIBLE);
-
         btnChooseProduct.setVisibility(View.GONE);
         txtAddNewProduct.setVisibility(View.GONE);
         btnChooseSenderLocation.setVisibility(View.GONE);
         btnChooseReceiverLocation.setVisibility(View.GONE);
-
-
         setAllInputsEnabled(false);
-
-        db.collection("ORDERS")
-                .document(orderId)
-                .get()
-                .addOnSuccessListener(documentSnapshot -> {
-                    if (documentSnapshot.exists()) {
-                        currentOrder = documentSnapshot.toObject(Order.class);
-                        currentOrder.setOrderId(documentSnapshot.getId());
-                        displayOrderInfo();
-                        // Cập nhật nút ngay khi tải được đơn hàng, không phụ thuộc ORDER_DETAILS.
-                        updateActionButton();
-                        loadOrderDetailsSubCollection();
-                    } else {
-                        Toast.makeText(this, "Không tìm thấy đơn hàng", Toast.LENGTH_SHORT).show();
-                        finish();
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Lỗi tải đơn hàng: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    finish();
-                });
-    }
-
-    private void loadOrderDetailsSubCollection() {
-        db.collection("ORDERS")
-                .document(orderId)
-                .collection("ORDER_DETAILS")
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    orderDetailList.clear();
-                    for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
-                        OrderDetail detail = doc.toObject(OrderDetail.class);
-                        orderDetailList.add(detail);
-                    }
-                    selectedProductList.clear();
-                    selectedProductList.addAll(orderDetailList);
-                    selectedProductAdapter.notifyDataSetChanged();
-                    updateProductUI();
-
-                    if (currentOrder != null) {
-                        updateTotalPriceViewMode();
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Lỗi tải chi tiết đơn", Toast.LENGTH_SHORT).show();
-                });
+        orderViewModel.loadOrderById(orderId);
     }
 
     private void displayOrderInfo() {
@@ -775,42 +763,8 @@ public class CreateOrderActivity extends AppCompatActivity {
         btnAction.setEnabled(false);
         btnAction.setText("Đang tạo...");
 
-        // Lưu đơn và các dòng sản phẩm trong cùng một batch để tránh đơn bị thiếu sản phẩm.
-        com.google.firebase.firestore.WriteBatch batch = db.batch();
-        batch.set(db.collection("ORDERS").document(orderId), orderData);
-
-        for (int i = 0; i < selectedProductList.size(); i++) {
-            OrderDetail detail = selectedProductList.get(i);
-            Map<String, Object> detailData = new HashMap<>();
-            detailData.put("productId", detail.getProductId());
-            detailData.put("productName", detail.getProductName());
-            detailData.put("description", detail.getDescription() != null ? detail.getDescription() : "");
-            detailData.put("weight", detail.getWeight());
-            detailData.put("price", detail.getPrice());
-            detailData.put("quantity", detail.getQuantity());
-            detailData.put("imageUrl", detail.getImageUrl() != null ? detail.getImageUrl() : "");
-
-            String detailId = String.format(Locale.ROOT, "ODT%03d", i + 1);
-            batch.set(db.collection("ORDERS").document(orderId)
-                    .collection("ORDER_DETAILS").document(detailId), detailData);
-        }
-
-        batch.commit()
-                .addOnSuccessListener(unused -> {
-                    isCreating = false;
-                    Toast.makeText(this, "Tạo đơn hàng " + orderId + " thành công!",
-                            Toast.LENGTH_LONG).show();
-                    finish();
-                })
-                .addOnFailureListener(e -> {
-                    isCreating = false;
-                    btnAction.setEnabled(true);
-                    btnAction.setText("XÁC NHẬN TẠO ĐƠN");
-                    Toast.makeText(this,
-                            "Không thể tạo đơn hàng. Dữ liệu chưa được lưu: " + e.getMessage(),
-                            Toast.LENGTH_LONG).show();
-                    Log.e("CreateOrderActivity", "Create order batch failed", e);
-                });
+        // ViewModel điều phối; Repository ghi đơn và các dòng sản phẩm trong cùng batch.
+        orderViewModel.createOrder(orderId, orderData, new ArrayList<>(selectedProductList));
     }
 
     private void createOrder() {
