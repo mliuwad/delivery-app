@@ -18,7 +18,7 @@ public class LocationRepository {
         public final String address;
         public LocationResult(double latitude, double longitude, String address) {
             this.latitude = latitude;
-            this.longitude = longitude == 0 ? 0 : longitude;
+            this.longitude = longitude;
             this.address = address == null ? "" : address;
         }
     }

@@ -7,7 +7,6 @@ import android.widget.Toast;
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
-import com.example.udgh.repositories.LocationRepository;
 import com.example.udgh.viewmodels.LocationViewModel;
 import androidx.appcompat.widget.SearchView;
 import androidx.core.graphics.Insets;
@@ -18,7 +17,6 @@ import com.google.android.material.button.MaterialButton;
 
 import org.osmdroid.api.IMapController;
 import org.osmdroid.config.Configuration;
-import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
 import org.osmdroid.tileprovider.tilesource.XYTileSource;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
