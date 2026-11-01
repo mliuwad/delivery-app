@@ -252,6 +252,114 @@ public class OrderRepository {
                 .addOnFailureListener(callback::onError);
     }
 
+    public void getOrdersForShipper(String shipperId, String status,
+                                    ResultCallback<List<Order>> callback) {
+        if (shipperId == null || shipperId.trim().isEmpty()) {
+            callback.onError(new IllegalArgumentException("Không xác định được tài khoản Shipper"));
+            return;
+        }
+
+        if ("PENDING".equals(status)) {
+            db.collection(COLLECTION)
+                    .whereIn("status", java.util.Arrays.asList("PENDING", "WAITING"))
+                    .get()
+                    .addOnSuccessListener(snapshot -> {
+                        List<Order> orders = new ArrayList<>();
+                        for (QueryDocumentSnapshot doc : snapshot) {
+                            String assignedShipperId = doc.getString("shipperId");
+                            if (assignedShipperId == null || assignedShipperId.trim().isEmpty()) {
+                                Order order = doc.toObject(Order.class);
+                                order.setOrderId(doc.getId());
+                                orders.add(order);
+                            }
+                        }
+                        sortOrders(orders);
+                        if (orders.isEmpty()) callback.onSuccess(orders);
+                        else loadOrderDetails(orders, callback);
+                    })
+                    .addOnFailureListener(callback::onError);
+            return;
+        }
+
+        if (!"ALL".equals(status)) {
+            db.collection(COLLECTION)
+                    .whereEqualTo("status", status)
+                    .whereEqualTo("shipperId", shipperId)
+                    .get()
+                    .addOnSuccessListener(snapshot -> {
+                        List<Order> orders = new ArrayList<>();
+                        for (QueryDocumentSnapshot doc : snapshot) {
+                            Order order = doc.toObject(Order.class);
+                            order.setOrderId(doc.getId());
+                            orders.add(order);
+                        }
+                        sortOrders(orders);
+                        if (orders.isEmpty()) callback.onSuccess(orders);
+                        else loadOrderDetails(orders, callback);
+                    })
+                    .addOnFailureListener(callback::onError);
+            return;
+        }
+
+        final List<Order> combined = java.util.Collections.synchronizedList(new ArrayList<>());
+        final AtomicInteger completedQueries = new AtomicInteger(0);
+        final AtomicInteger failedQueries = new AtomicInteger(0);
+
+        db.collection(COLLECTION)
+                .whereIn("status", java.util.Arrays.asList("PENDING", "WAITING"))
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    for (QueryDocumentSnapshot doc : snapshot) {
+                        String assignedShipperId = doc.getString("shipperId");
+                        if (assignedShipperId == null || assignedShipperId.trim().isEmpty()) {
+                            Order order = doc.toObject(Order.class);
+                            order.setOrderId(doc.getId());
+                            combined.add(order);
+                        }
+                    }
+                    finishShipperQueries(completedQueries, failedQueries, combined, callback);
+                })
+                .addOnFailureListener(error -> {
+                    failedQueries.incrementAndGet();
+                    finishShipperQueries(completedQueries, failedQueries, combined, callback);
+                });
+
+        db.collection(COLLECTION)
+                .whereEqualTo("shipperId", shipperId)
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    for (QueryDocumentSnapshot doc : snapshot) {
+                        String orderStatus = doc.getString("status");
+                        if (!"PENDING".equals(orderStatus) && !"WAITING".equals(orderStatus)) {
+                            Order order = doc.toObject(Order.class);
+                            order.setOrderId(doc.getId());
+                            combined.add(order);
+                        }
+                    }
+                    finishShipperQueries(completedQueries, failedQueries, combined, callback);
+                })
+                .addOnFailureListener(error -> {
+                    failedQueries.incrementAndGet();
+                    finishShipperQueries(completedQueries, failedQueries, combined, callback);
+                });
+    }
+
+    private void finishShipperQueries(AtomicInteger completedQueries,
+                                      AtomicInteger failedQueries,
+                                      List<Order> orders,
+                                      ResultCallback<List<Order>> callback) {
+        if (completedQueries.incrementAndGet() != 2) return;
+
+        if (orders.isEmpty() && failedQueries.get() > 0) {
+            callback.onError(new IllegalStateException("Không thể tải danh sách đơn hàng"));
+            return;
+        }
+
+        sortOrders(orders);
+        if (orders.isEmpty()) callback.onSuccess(orders);
+        else loadOrderDetails(orders, callback);
+    }
+
     public void getOrdersByCreator(String creatorId, ResultCallback<List<Order>> callback) {
         if (creatorId == null || creatorId.trim().isEmpty()) {
             callback.onError(new IllegalArgumentException("Không xác định được tài khoản Creator"));
