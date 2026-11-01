@@ -30,7 +30,7 @@
         android:elevation="8dp"
         app:itemIconTint="@color/creator_nav_tint"
         app:itemTextColor="@color/creator_nav_tint"
-        app:itemActiveIndicatorColor="@color/mint_primary_light"
+        app:itemActiveIndicatorColor="@color/primary_light"
         app:labelVisibilityMode="labeled"
         app:menu="@menu/menu_bottom_creator" />
 </LinearLayout>
