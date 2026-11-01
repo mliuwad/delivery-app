@@ -5,6 +5,7 @@ import android.text.TextUtils;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import androidx.lifecycle.ViewModelProvider;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -22,21 +23,17 @@ import com.bumptech.glide.Glide;
 import com.example.udgh.models.Order;
 import com.example.udgh.models.OrderDetail;
 import com.example.udgh.models.User;
+import com.example.udgh.repositories.SalaryDetailRepository;
+import com.example.udgh.viewmodels.SalaryDetailViewModel;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
-import com.google.firebase.Timestamp;
-import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 public class SalaryDetailActivity extends AppCompatActivity {
 
@@ -49,10 +46,10 @@ public class SalaryDetailActivity extends AppCompatActivity {
     private MaterialButton btnConfirmSalary;
     private SwipeRefreshLayout swipeRefreshLayout;
 
-    private FirebaseFirestore db;
+    private SalaryDetailViewModel viewModel;
     private String shipperId;
     private int month, year;
-    private String shipperName;
+    private String salaryDocumentId;
     private double totalSalary = 0;
     private long totalOrders = 0;
     private String paymentStatus = "UNPAID";
@@ -72,7 +69,6 @@ public class SalaryDetailActivity extends AppCompatActivity {
             return insets;
         });
 
-        db = FirebaseFirestore.getInstance();
 
         shipperId = getIntent().getStringExtra("shipperId");
         month = getIntent().getIntExtra("month", Calendar.getInstance().get(Calendar.MONTH) + 1);
@@ -101,8 +97,10 @@ public class SalaryDetailActivity extends AppCompatActivity {
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         toolbar.setNavigationOnClickListener(v -> finish());
 
+        viewModel = new ViewModelProvider(this).get(SalaryDetailViewModel.class);
         orderList = new ArrayList<>();
         orderAdapter = new OrderAdapter(orderList);
+        observeViewModel();
         rvOrders.setLayoutManager(new LinearLayoutManager(this));
         rvOrders.setAdapter(orderAdapter);
 
@@ -115,190 +113,71 @@ public class SalaryDetailActivity extends AppCompatActivity {
     }
 
     private void loadData() {
-        swipeRefreshLayout.setRefreshing(true);
-
-        // 1. Lấy thông tin User
-        db.collection("USERS")
-                .document(shipperId)
-                .get()
-                .addOnSuccessListener(userDoc -> {
-                    if (userDoc.exists()) {
-                        User user = userDoc.toObject(User.class);
-                        shipperName = user.getFullName();
-                        txtName.setText(shipperName);
-                        txtPhone.setText(user.getPhone());
-
-                        String avatarUrl = user.getAvatarUrl();
-                        if (!TextUtils.isEmpty(avatarUrl)) {
-                            Glide.with(this)
-                                    .load(avatarUrl)
-                                    .circleCrop()
-                                    .placeholder(R.drawable.delivery_man)
-                                    .error(R.drawable.delivery_man)
-                                    .into(imgAvatar);
-                        }
-                    }
-                })
-                .addOnFailureListener(e -> Toast.makeText(this, "Lỗi tải user", Toast.LENGTH_SHORT).show());
-
-        // 2. Lấy dữ liệu tổng hợp từ SALARIES
-        db.collection("SALARIES")
-                .whereEqualTo("shipperID", shipperId)
-                .whereEqualTo("month", month)
-                .whereEqualTo("year", year)
-                .get()
-                .addOnSuccessListener(salarySnapshots -> {
-                    if (!salarySnapshots.isEmpty()) {
-                        DocumentSnapshot doc = salarySnapshots.getDocuments().get(0);
-                        totalOrders = doc.getLong("totalOrders") != null ? doc.getLong("totalOrders") : 0;
-                        totalSalary = doc.getDouble("totalSalary") != null ? doc.getDouble("totalSalary") : 0;
-                        paymentStatus = doc.getString("paymentStatus") != null ? doc.getString("paymentStatus") : "UNPAID";
-                    } else {
-                        totalOrders = 0;
-                        totalSalary = 0;
-                        paymentStatus = "UNPAID";
-                    }
-
-                    // Cập nhật UI thống kê
-                    txtCompletedOrders.setText(String.valueOf(totalOrders));
-                    txtTotalSalary.setText(formatCurrency((int) totalSalary));
-                    txtShippingRevenue.setText("Tổng phí giao hàng: " + formatCurrency((int) totalSalary));
-                    txtSalaryFinal.setText(formatCurrency((int) totalSalary));
-
-                    if ("PAID".equals(paymentStatus)) {
-                        txtStatus.setText("✅ Đã thanh toán");
-                        txtStatus.setTextColor(getColor(R.color.success));
-                        btnConfirmSalary.setVisibility(View.GONE);
-                    } else {
-                        txtStatus.setText("🟠 Chưa thanh toán");
-                        txtStatus.setTextColor(getColor(R.color.warning));
-                        btnConfirmSalary.setVisibility(View.VISIBLE);
-                    }
-
-                    // 3. Lấy danh sách đơn hàng để hiển thị (chỉ để hiển thị, không tính toán lại)
-                    loadOrders();
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Lỗi tải dữ liệu lương: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    swipeRefreshLayout.setRefreshing(false);
-                });
+        viewModel.load(shipperId, month, year);
     }
 
-    private void loadOrders() {
-        // Truy vấn lấy tất cả đơn COMPLETED của shipper
-        db.collection("ORDERS")
-                .whereEqualTo("shipperId", shipperId)
-                .whereEqualTo("status", "COMPLETED")
-                .get()
-                .addOnSuccessListener(orderSnapshots -> {
-                    orderList.clear();
+    private void observeViewModel() {
+        viewModel.getDetail().observe(this, data -> {
+            if (data == null) return;
+            User user = data.user;
+            txtName.setText(user.getFullName() != null ? user.getFullName() : "Không có tên");
+            txtPhone.setText(user.getPhone() != null ? user.getPhone() : "--");
+            if (!TextUtils.isEmpty(user.getAvatarUrl())) {
+                Glide.with(this).load(user.getAvatarUrl()).circleCrop()
+                        .placeholder(R.drawable.delivery_man)
+                        .error(R.drawable.delivery_man).into(imgAvatar);
+            } else {
+                imgAvatar.setImageResource(R.drawable.delivery_man);
+            }
 
-                    // Lọc thủ công theo tháng
-                    Calendar startCal = Calendar.getInstance();
-                    startCal.set(year, month - 1, 1, 0, 0, 0);
-                    startCal.set(Calendar.MILLISECOND, 0);
-                    Timestamp startTimestamp = new Timestamp(startCal.getTime());
+            totalSalary = data.totalSalary;
+            totalOrders = data.totalOrders;
+            paymentStatus = data.paymentStatus;
+            salaryDocumentId = data.salaryDocumentId;
 
-                    Calendar endCal = Calendar.getInstance();
-                    endCal.set(year, month - 1, startCal.getActualMaximum(Calendar.DAY_OF_MONTH), 23, 59, 59);
-                    endCal.set(Calendar.MILLISECOND, 999);
-                    Timestamp endTimestamp = new Timestamp(endCal.getTime());
+            txtCompletedOrders.setText(String.valueOf(totalOrders));
+            txtTotalSalary.setText(formatCurrency((int) totalSalary));
+            txtShippingRevenue.setText("Tổng phí giao hàng: " + formatCurrency((int) totalSalary));
+            txtSalaryFinal.setText(formatCurrency((int) totalSalary));
 
-                    for (QueryDocumentSnapshot doc : orderSnapshots) {
-                        Order order = doc.toObject(Order.class);
-                        order.setOrderId(doc.getId());
-                        Timestamp deliveredAt = order.getDeliveredAt();
-                        if (deliveredAt != null && deliveredAt.compareTo(startTimestamp) >= 0 && deliveredAt.compareTo(endTimestamp) <= 0) {
-                            orderList.add(order);
-                        }
-                    }
+            boolean paid = "PAID".equals(paymentStatus);
+            txtStatus.setText(paid ? "Đã thanh toán" : "Chưa thanh toán");
+            txtStatus.setTextColor(getColor(paid ? R.color.success : R.color.warning));
+            btnConfirmSalary.setVisibility(paid || salaryDocumentId == null ? View.GONE : View.VISIBLE);
+            btnConfirmSalary.setEnabled(true);
+            btnConfirmSalary.setText("XÁC NHẬN ĐÃ THANH TOÁN");
 
-                    // Sắp xếp theo deliveredAt mới nhất
-                    orderList.sort((o1, o2) -> {
-                        if (o1.getDeliveredAt() == null && o2.getDeliveredAt() == null) return 0;
-                        if (o1.getDeliveredAt() == null) return 1;
-                        if (o2.getDeliveredAt() == null) return -1;
-                        return o2.getDeliveredAt().compareTo(o1.getDeliveredAt());
-                    });
+            orderList.clear();
+            orderList.addAll(data.orders);
+            orderAdapter.notifyDataSetChanged();
+        });
 
-                    orderAdapter.notifyDataSetChanged();
+        viewModel.getLoading().observe(this, loading ->
+                swipeRefreshLayout.setRefreshing(Boolean.TRUE.equals(loading)));
 
-                    // Load OrderDetail cho từng đơn
-                    loadOrderDetails();
+        viewModel.getMessage().observe(this, message -> {
+            if (!TextUtils.isEmpty(message)) {
+                Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+            }
+        });
 
-                    swipeRefreshLayout.setRefreshing(false);
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Lỗi tải đơn hàng: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    swipeRefreshLayout.setRefreshing(false);
-                });
-    }
-
-    private void loadOrderDetails() {
-        for (Order order : orderList) {
-            db.collection("ORDERS")
-                    .document(order.getOrderId())
-                    .collection("ORDER_DETAILS")
-                    .get()
-                    .addOnSuccessListener(detailSnapshots -> {
-                        List<OrderDetail> details = new ArrayList<>();
-                        for (QueryDocumentSnapshot doc : detailSnapshots) {
-                            OrderDetail detail = doc.toObject(OrderDetail.class);
-                            details.add(detail);
-                        }
-                        order.setOrderDetails(details);
-                        orderAdapter.notifyDataSetChanged();
-                    })
-                    .addOnFailureListener(e -> {
-                        order.setOrderDetails(new ArrayList<>());
-                        orderAdapter.notifyDataSetChanged();
-                    });
-        }
+        viewModel.getPaymentSuccess().observe(this, success -> {
+            if (success == null) return;
+            btnConfirmSalary.setEnabled(true);
+            btnConfirmSalary.setText("XÁC NHẬN ĐÃ THANH TOÁN");
+            if (success) {
+                paymentStatus = "PAID";
+                txtStatus.setText("Đã thanh toán");
+                txtStatus.setTextColor(getColor(R.color.success));
+                btnConfirmSalary.setVisibility(View.GONE);
+            }
+        });
     }
 
     private void confirmPayment() {
         btnConfirmSalary.setEnabled(false);
         btnConfirmSalary.setText("Đang cập nhật...");
-
-        Map<String, Object> updates = new HashMap<>();
-        updates.put("paymentStatus", "PAID");
-
-        db.collection("SALARIES")
-                .whereEqualTo("shipperID", shipperId)
-                .whereEqualTo("month", month)
-                .whereEqualTo("year", year)
-                .get()
-                .addOnSuccessListener(snapshots -> {
-                    if (!snapshots.isEmpty()) {
-                        String docId = snapshots.getDocuments().get(0).getId();
-                        db.collection("SALARIES")
-                                .document(docId)
-                                .update(updates)
-                                .addOnSuccessListener(aVoid -> {
-                                    Toast.makeText(this, "Đã xác nhận thanh toán!", Toast.LENGTH_SHORT).show();
-                                    paymentStatus = "PAID";
-                                    txtStatus.setText("✅ Đã thanh toán");
-                                    txtStatus.setTextColor(getColor(R.color.success));
-                                    btnConfirmSalary.setVisibility(View.GONE);
-                                    btnConfirmSalary.setEnabled(true);
-                                    btnConfirmSalary.setText("XÁC NHẬN ĐÃ THANH TOÁN");
-                                })
-                                .addOnFailureListener(e -> {
-                                    Toast.makeText(this, "Lỗi cập nhật: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                                    btnConfirmSalary.setEnabled(true);
-                                    btnConfirmSalary.setText("XÁC NHẬN ĐÃ THANH TOÁN");
-                                });
-                    } else {
-                        Toast.makeText(this, "Không tìm thấy dữ liệu lương", Toast.LENGTH_SHORT).show();
-                        btnConfirmSalary.setEnabled(true);
-                        btnConfirmSalary.setText("XÁC NHẬN ĐÃ THANH TOÁN");
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    btnConfirmSalary.setEnabled(true);
-                    btnConfirmSalary.setText("XÁC NHẬN ĐÃ THANH TOÁN");
-                });
+        viewModel.confirmPayment();
     }
 
     private String formatCurrency(int price) {
