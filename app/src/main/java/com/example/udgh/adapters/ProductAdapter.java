@@ -26,6 +26,7 @@ public class ProductAdapter
 
     private final List<Product> productList = new ArrayList<>();
     private final OnProductActionListener listener;
+    private boolean adminViewOnly = false;
 
     public interface OnProductActionListener {
         void onEditProduct(Product product);
@@ -42,6 +43,11 @@ public class ProductAdapter
         }
 
         this.listener = listener;
+    }
+
+    public void setAdminViewOnly(boolean adminViewOnly) {
+        this.adminViewOnly = adminViewOnly;
+        notifyDataSetChanged();
     }
 
     public void setProducts(List<Product> products) {
@@ -96,6 +102,9 @@ public class ProductAdapter
         } else {
             holder.imgProduct.setImageResource(R.drawable.box);
         }
+
+        holder.btnEdit.setVisibility(adminViewOnly ? View.GONE : View.VISIBLE);
+        holder.btnDelete.setVisibility(adminViewOnly ? View.GONE : View.VISIBLE);
 
         holder.btnEdit.setOnClickListener(v -> {
             if (listener != null) {
