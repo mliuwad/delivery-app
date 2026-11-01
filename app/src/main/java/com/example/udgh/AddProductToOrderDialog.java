@@ -13,7 +13,8 @@ import com.example.udgh.ProductSelectionAdapter;
 import com.example.udgh.models.OrderDetail;
 import com.example.udgh.models.Product;
 import com.google.android.material.button.MaterialButton;
-import com.google.firebase.firestore.FirebaseFirestore;\nimport com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.util.ArrayList;
@@ -89,7 +90,8 @@ public class AddProductToOrderDialog {
                     productList.clear();
                     for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
                         Product product = new Product();
-                        product.setProductId(doc.getId());\n                        product.setCreatedBy(doc.getString("createdBy"));
+                        product.setProductId(doc.getId());
+                        product.setCreatedBy(doc.getString("createdBy"));
                         product.setProductName(doc.getString("productName"));
                         product.setPrice(doc.getDouble("price") != null ? doc.getDouble("price") : 0);
                         product.setImageUrl(doc.getString("imageUrl"));
