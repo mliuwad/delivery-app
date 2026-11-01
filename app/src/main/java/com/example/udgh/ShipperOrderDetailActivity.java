@@ -26,8 +26,6 @@ import com.example.udgh.viewmodels.OrderViewModel;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
@@ -68,7 +66,6 @@ public class ShipperOrderDetailActivity extends AppCompatActivity {
     private TextInputEditText edtCOD;
 
     // Firebase
-    private FirebaseFirestore db;
     private FirebaseAuth mAuth;
     private String userId;
 
@@ -88,7 +85,6 @@ public class ShipperOrderDetailActivity extends AppCompatActivity {
             return insets;
         });
 
-        db = FirebaseFirestore.getInstance();
         mAuth = FirebaseAuth.getInstance();
 
         SharedPreferences sharedPref = getSharedPreferences("MyAppPrefs", MODE_PRIVATE);
@@ -203,6 +199,27 @@ public class ShipperOrderDetailActivity extends AppCompatActivity {
             btnAction.setText("Đang cập nhật...");
             orderViewModel.updateOrderStatus(orderId, userId, nextStatus);
         });
+        orderViewModel.getSelectedOrder().observe(this, order -> {
+            if (order == null) return;
+            currentOrder = order;
+            productList.clear();
+            if (order.getOrderDetails() != null) {
+                productList.addAll(order.getOrderDetails());
+            }
+            displayOrderInfo();
+            updateActionButton();
+            productAdapter.notifyDataSetChanged();
+            updateProductUI();
+            updateTotalPrice();
+        });
+
+        orderViewModel.getErrorMessage().observe(this, message -> {
+            if (message != null && !message.trim().isEmpty()) {
+                Toast.makeText(this, "Lỗi tải đơn: " + message, Toast.LENGTH_LONG).show();
+                finish();
+            }
+        });
+
         orderViewModel.getActionResult().observe(this, result -> {
             if (result == null) return;
             btnAction.setEnabled(true);
@@ -235,50 +252,7 @@ public class ShipperOrderDetailActivity extends AppCompatActivity {
     }
 
     private void loadOrderDetails() {
-        db.collection("ORDERS")
-                .document(orderId)
-                .get()
-                .addOnSuccessListener(documentSnapshot -> {
-                    if (documentSnapshot.exists()) {
-                        currentOrder = documentSnapshot.toObject(Order.class);
-                        currentOrder.setOrderId(documentSnapshot.getId());
-                        displayOrderInfo();
-                        updateActionButton();
-                        loadOrderDetailsSubCollection();
-                    } else {
-                        Toast.makeText(this, "Không tìm thấy đơn hàng", Toast.LENGTH_SHORT).show();
-                        finish();
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Lỗi tải đơn: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    finish();
-                });
-    }
-
-    private void loadOrderDetailsSubCollection() {
-        db.collection("ORDERS")
-                .document(orderId)
-                .collection("ORDER_DETAILS")
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    productList.clear();
-                    for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
-                        OrderDetail detail = doc.toObject(OrderDetail.class);
-                        // Nếu có thể, log để kiểm tra dữ liệu
-                        // Log.d("OrderDetail", "Product: " + detail.getProductName());
-                        productList.add(detail);
-                    }
-                    productAdapter.notifyDataSetChanged();
-                    updateProductUI();    // Cập nhật hiển thị ẩn/hiện
-                    updateTotalPrice();
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Lỗi tải chi tiết đơn", Toast.LENGTH_SHORT).show();
-                    productList.clear();
-                    productAdapter.notifyDataSetChanged();
-                    updateProductUI();
-                });
+        orderViewModel.loadOrderById(orderId);
     }
 
     // ================== CẬP NHẬT UI SẢN PHẨM ==================
