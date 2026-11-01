@@ -18,6 +18,8 @@ public class Order {
     private double receiverLat;
     private double receiverLng;
     private double deliveryFee;
+    private boolean isCOD;
+    private double codAmount;
     private double totalProductValue;
     private String status;
     private String note;
@@ -71,6 +73,12 @@ public class Order {
 
     public double getDeliveryFee() { return deliveryFee; }
     public void setDeliveryFee(double deliveryFee) { this.deliveryFee = deliveryFee; }
+
+    public boolean isCOD() { return isCOD; }
+    public void setCOD(boolean COD) { isCOD = COD; }
+
+    public double getCodAmount() { return codAmount; }
+    public void setCodAmount(double codAmount) { this.codAmount = codAmount; }
 
     public double getTotalProductValue() { return totalProductValue; }
     public void setTotalProductValue(double totalProductValue) { this.totalProductValue = totalProductValue; }
