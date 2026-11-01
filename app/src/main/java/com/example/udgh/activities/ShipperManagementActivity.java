@@ -148,6 +148,10 @@ public class ShipperManagementActivity extends AppCompatActivity {
     }
 
     private void loadShippers() {
+        if (swipeRefreshLayout == null || viewModel == null) {
+            return;
+        }
+
         swipeRefreshLayout.setRefreshing(true);
         viewModel.loadShippers();
     }
@@ -173,9 +177,12 @@ public class ShipperManagementActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        loadShippers();
-    }
 
+        // Chỉ tải dữ liệu khi giao diện đã được khởi tạo
+        if (viewModel != null && swipeRefreshLayout != null) {
+            loadShippers();
+        }
+    }
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.shipper_toolbar_menu, menu);
