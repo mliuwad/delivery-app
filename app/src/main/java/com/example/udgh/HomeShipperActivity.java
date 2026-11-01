@@ -49,10 +49,10 @@ public class HomeShipperActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_home_shipper);
 
-        RoleAccess.requireRole(this, "SHIPPER", this::initializeShipperScreen);
+        RoleAccess.requireRole(this, "SHIPPER", () -> initializeShipperScreen(savedInstanceState == null));
     }
 
-    private void initializeShipperScreen() {
+    private void initializeShipperScreen(boolean isFirstCreation) {
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
@@ -80,7 +80,7 @@ public class HomeShipperActivity extends AppCompatActivity {
         loadAvatarUrl();
 
         // Mặc định hiển thị HomeShipperFragment
-        if (savedInstanceState == null) {
+        if (isFirstCreation) {
             loadFragment(new HomeShipperFragment());
         }
 
