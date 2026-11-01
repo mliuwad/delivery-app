@@ -76,7 +76,7 @@ public class HomeShipperFragment extends Fragment {
 
         // Setup RecyclerView
         waitingOrderList = new ArrayList<>();
-        waitingOrderAdapter = new OrderAdapter(waitingOrderList);
+        waitingOrderAdapter = new OrderAdapter(waitingOrderList, ShipperOrderDetailActivity.class);
         rvWaitingOrders.setLayoutManager(new LinearLayoutManager(getContext()));
         rvWaitingOrders.setAdapter(waitingOrderAdapter);
 
