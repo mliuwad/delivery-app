@@ -345,8 +345,8 @@ public class ShipperOrderDetailActivity extends AppCompatActivity {
             totalProductPrice += detail.getPrice() * detail.getQuantity();
         }
         txtProductPrice.setText(formatCurrency((int) totalProductPrice));
-        double total = totalProductPrice + currentOrder.getDeliveryFee()
-                + (currentOrder.isCOD() ? currentOrder.getCodAmount() : 0);
+        // COD đã bao gồm tiền hàng + phí vận chuyển, không cộng lần thứ hai.
+        double total = totalProductPrice + currentOrder.getDeliveryFee();
         txtTotalPrice.setText(formatCurrency((int) total));
     }
 
