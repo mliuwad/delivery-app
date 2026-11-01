@@ -93,6 +93,8 @@ public class ProductManagementActivity extends AppCompatActivity
                     if (!isAdmin && !"CREATOR".equalsIgnoreCase(role)) {
                         Toast.makeText(this, "Tài khoản không có quyền quản lý sản phẩm", Toast.LENGTH_SHORT).show(); finish(); return;
                     }
+                    productAdapter.setAdminViewOnly(isAdmin);
+                    invalidateOptionsMenu();
                     productViewModel.loadProducts(currentUserId, isAdmin);
                 })
                 .addOnFailureListener(e -> Toast.makeText(this, "Không thể xác định quyền tài khoản", Toast.LENGTH_SHORT).show());
@@ -253,6 +255,13 @@ public class ProductManagementActivity extends AppCompatActivity
                 menu
         );
         return true;
+    }
+
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        MenuItem addItem = menu.findItem(R.id.action_add);
+        if (addItem != null) addItem.setVisible(!isAdmin);
+        return super.onPrepareOptionsMenu(menu);
     }
 
     @Override
