@@ -285,15 +285,10 @@ public class AddEditProductActivity extends AppCompatActivity {
 
         Product product = createProductFromInput();
 
-        if (FirebaseAuth.getInstance().getCurrentUser() != null) {
-            product.setCreatedBy(
-                    FirebaseAuth.getInstance()
-                            .getCurrentUser()
-                            .getUid()
-            );
-        } else {
-            product.setCreatedBy("unknown");
+        if (FirebaseAuth.getInstance().getCurrentUser() == null) {
+            Toast.makeText(this, "Vui lòng đăng nhập", Toast.LENGTH_SHORT).show(); return;
         }
+        product.setCreatedBy(FirebaseAuth.getInstance().getCurrentUser().getUid());
 
         byte[] imageBytes = readSelectedImage();
 
@@ -321,15 +316,7 @@ public class AddEditProductActivity extends AppCompatActivity {
         product.setProductId(productId);
         product.setImageUrl(imageUrl);
 
-        if (FirebaseAuth.getInstance().getCurrentUser() != null) {
-            product.setCreatedBy(
-                    FirebaseAuth.getInstance()
-                            .getCurrentUser()
-                            .getUid()
-            );
-        } else {
-            product.setCreatedBy("unknown");
-        }
+        // Giữ nguyên createdBy của sản phẩm; không chuyển quyền sở hữu khi sửa.
 
         byte[] newImageBytes = null;
 
