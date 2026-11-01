@@ -31,6 +31,11 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        RoleAccess.requireRole(this, "ADMIN", this::initializeAdminScreen);
+    }
+
+    private void initializeAdminScreen() {
+
         // Khởi tạo Firebase
         mAuth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
@@ -82,6 +87,7 @@ public class MainActivity extends AppCompatActivity {
 
         // Load dữ liệu thống kê
         loadStatistics();
+    
     }
 
     // ================== LOAD THỐNG KÊ ==================
