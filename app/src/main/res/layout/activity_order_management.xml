@@ -42,25 +42,16 @@
 
     </com.google.android.material.tabs.TabLayout>
 
-    <!-- SearchView -->
+    <!-- Thanh tìm kiếm kiểu sản phẩm -->
     <androidx.cardview.widget.CardView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="12dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="8dp"
-        app:cardBackgroundColor="@color/white"
-        app:cardCornerRadius="24dp"
-        app:cardElevation="2dp">
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:layout_margin="16dp" app:cardBackgroundColor="@color/white"
+        app:cardCornerRadius="24dp" app:cardElevation="2dp">
         <androidx.appcompat.widget.SearchView
-            android:id="@+id/searchView"
-            style="@style/SearchViewStyle"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
+            android:id="@+id/searchView" style="@style/SearchViewStyle"
+            android:layout_width="match_parent" android:layout_height="48dp"
             android:background="@android:color/transparent"
-            app:iconifiedByDefault="false"
-            app:queryHint="Tìm kiếm đơn hàng..." />
+            app:iconifiedByDefault="false" app:queryHint="Tìm kiếm đơn hàng..." />
     </androidx.cardview.widget.CardView>
 
     <!-- Danh sách đơn hàng -->
