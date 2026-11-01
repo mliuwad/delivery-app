@@ -171,6 +171,34 @@ public class OrderViewModel extends ViewModel {
         });
     }
 
+    public void loadShipperOrders(String shipperId, String status) {
+        currentFilter = status == null ? "ALL" : status;
+        int currentRequestId = ++requestId;
+        isLoading.setValue(true);
+        errorMessage.setValue(null);
+
+        repository.getOrdersForShipper(shipperId, currentFilter,
+                new OrderRepository.ResultCallback<List<Order>>() {
+                    @Override
+                    public void onSuccess(List<Order> result) {
+                        if (currentRequestId != requestId) return;
+                        allOrders.clear();
+                        if (result != null) allOrders.addAll(result);
+                        totalOrdersCount.setValue(allOrders.size());
+                        applySearch();
+                        isLoading.setValue(false);
+                    }
+
+                    @Override
+                    public void onError(Exception e) {
+                        if (currentRequestId != requestId) return;
+                        isLoading.setValue(false);
+                        errorMessage.setValue(e != null && e.getMessage() != null
+                                ? e.getMessage() : "Không thể tải đơn hàng của Shipper");
+                    }
+                });
+    }
+
     public void loadCreatorOrders(String creatorId) {
         currentFilter = "ALL";
         int currentRequestId = ++requestId;
