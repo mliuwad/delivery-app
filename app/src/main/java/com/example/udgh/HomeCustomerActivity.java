@@ -95,7 +95,7 @@ public class HomeCustomerActivity extends AppCompatActivity {
 
         // Setup RecyclerView Orders
         orderList = new ArrayList<>();
-        orderAdapter = new OrderAdapter(orderList);
+        orderAdapter = new OrderAdapter(orderList, CreatorOrderDetailActivity.class);
         rvOrders.setLayoutManager(new LinearLayoutManager(this));
         rvOrders.setAdapter(orderAdapter);
 
