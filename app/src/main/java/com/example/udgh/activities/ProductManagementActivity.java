@@ -83,7 +83,7 @@ public class ProductManagementActivity extends AppCompatActivity
     }
 
     private void loadCurrentUserAndProducts() {
-        currentUserId = com.google.firebase.auth.FirebaseAuth.getInstance().getUid();
+        currentUserId = productViewModel.getCurrentUserUid();
         if (currentUserId == null) {
             finish();
             return;

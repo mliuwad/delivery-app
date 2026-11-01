@@ -29,7 +29,6 @@ import com.example.udgh.viewmodels.ProductViewModel;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
-import com.google.firebase.auth.FirebaseAuth;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -294,10 +293,12 @@ public class AddEditProductActivity extends AppCompatActivity {
 
         Product product = createProductFromInput();
 
-        if (FirebaseAuth.getInstance().getCurrentUser() == null) {
-            Toast.makeText(this, "Vui lòng đăng nhập", Toast.LENGTH_SHORT).show(); return;
+        String currentUserId = productViewModel.getCurrentUserUid();
+        if (currentUserId == null || currentUserId.trim().isEmpty()) {
+            Toast.makeText(this, "Vui lòng đăng nhập", Toast.LENGTH_SHORT).show();
+            return;
         }
-        product.setCreatedBy(FirebaseAuth.getInstance().getCurrentUser().getUid());
+        product.setCreatedBy(currentUserId);
 
         byte[] imageBytes = readSelectedImage();
 

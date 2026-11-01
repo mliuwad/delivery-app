@@ -47,6 +47,10 @@ public class ProductViewModel extends ViewModel {
         return accessResult;
     }
 
+    public String getCurrentUserUid() {
+        return productRepository.getCurrentUserUid();
+    }
+
     /**
      * Xác định role và tải danh sách sản phẩm theo quyền.
      * Activity không cần tự đọc USERS trên Firestore.
