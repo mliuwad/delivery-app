@@ -171,6 +171,38 @@ public class OrderViewModel extends ViewModel {
         });
     }
 
+    public void loadCreatorOrders(String creatorId) {
+        currentFilter = "ALL";
+        int currentRequestId = ++requestId;
+        isLoading.setValue(true);
+        errorMessage.setValue(null);
+
+        repository.getOrdersByCreator(creatorId, new OrderRepository.ResultCallback<List<Order>>() {
+            @Override
+            public void onSuccess(List<Order> result) {
+                if (currentRequestId != requestId) return;
+                allOrders.clear();
+                if (result != null) allOrders.addAll(result);
+                totalOrdersCount.setValue(allOrders.size());
+                applySearch();
+                isLoading.setValue(false);
+            }
+
+            @Override
+            public void onError(Exception e) {
+                if (currentRequestId != requestId) return;
+                isLoading.setValue(false);
+                errorMessage.setValue(e != null && e.getMessage() != null
+                        ? e.getMessage() : "Không thể tải đơn hàng của Creator");
+            }
+        });
+    }
+
+    public void setStatusFilter(String status) {
+        currentFilter = status == null ? "ALL" : status;
+        applySearch();
+    }
+
     public void searchOrders(String keyword) {
         currentKeyword = keyword != null ? keyword.trim() : "";
         applySearch();
@@ -180,7 +212,11 @@ public class OrderViewModel extends ViewModel {
         List<Order> filteredOrders = new ArrayList<>();
 
         if (currentKeyword.isEmpty()) {
-            filteredOrders.addAll(allOrders);
+            for (Order order : allOrders) {
+                if (order != null && matchesCurrentStatus(order)) {
+                    filteredOrders.add(order);
+                }
+            }
         } else {
             String searchText = currentKeyword.toLowerCase(Locale.ROOT);
 
@@ -201,15 +237,24 @@ public class OrderViewModel extends ViewModel {
                         ? order.getSenderName().toLowerCase(Locale.ROOT)
                         : "";
 
-                if (orderId.contains(searchText)
+                boolean keywordMatches = orderId.contains(searchText)
                         || receiverName.contains(searchText)
-                        || senderName.contains(searchText)) {
+                        || senderName.contains(searchText);
+                if (matchesCurrentStatus(order) && keywordMatches) {
                     filteredOrders.add(order);
                 }
             }
         }
 
         orders.setValue(filteredOrders);
+    }
+
+    private boolean matchesCurrentStatus(Order order) {
+        if ("ALL".equals(currentFilter)) return true;
+        if ("PENDING".equals(currentFilter)) {
+            return "PENDING".equals(order.getStatus()) || "WAITING".equals(order.getStatus());
+        }
+        return currentFilter.equals(order.getStatus());
     }
 
     public void refreshOrders() {
