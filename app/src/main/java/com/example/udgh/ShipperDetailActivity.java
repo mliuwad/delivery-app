@@ -24,16 +24,15 @@ import androidx.core.view.WindowInsetsCompat;
 import com.bumptech.glide.Glide;
 import com.example.udgh.models.ShipperDetail;
 import com.example.udgh.models.User;
+import com.example.udgh.repositories.ShipperDetailRepository;
+import com.example.udgh.viewmodels.ShipperDetailViewModel;
+import androidx.lifecycle.ViewModelProvider;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
-import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.FirebaseFirestore;
 import org.json.JSONObject;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.HashMap;
-import java.util.Map;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -51,7 +50,7 @@ public class ShipperDetailActivity extends AppCompatActivity {
     private EditText edtFullName, edtPhone, edtEmail, edtCitizenId, edtLicensePlate, edtAddress;
     private MaterialButton btnEdit, btnLock, btnDelete;
 
-    private FirebaseFirestore db;
+    private ShipperDetailViewModel viewModel;
     private String shipperId;
     private String shipperDetailId;
 
@@ -96,7 +95,7 @@ public class ShipperDetailActivity extends AppCompatActivity {
             return insets;
         });
 
-        db = FirebaseFirestore.getInstance();
+        viewModel = new ViewModelProvider(this).get(ShipperDetailViewModel.class);
 
         shipperId = getIntent().getStringExtra("shipperId");
         if (TextUtils.isEmpty(shipperId)) {
@@ -186,6 +185,7 @@ public class ShipperDetailActivity extends AppCompatActivity {
         // Nút Xóa
         btnDelete.setOnClickListener(v -> deleteShipper());
 
+        observeViewModel();
         loadProfile();
     }
 
@@ -290,81 +290,54 @@ public class ShipperDetailActivity extends AppCompatActivity {
 
     // ==================== UPDATE AVATAR URL TO FIRESTORE ====================
     private void updateAvatarUrl(String imageUrl) {
-        Map<String, Object> updates = new HashMap<>();
-        updates.put("avatarUrl", imageUrl);
-
-        db.collection("USERS")
-                .document(shipperId)
-                .update(updates)
-                .addOnSuccessListener(aVoid -> {
-                    Toast.makeText(this, "Cập nhật ảnh đại diện thành công", Toast.LENGTH_SHORT).show();
-                    if (currentUser != null) {
-                        currentUser.setAvatarUrl(imageUrl);
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Lỗi cập nhật avatar: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                });
+        viewModel.updateAvatar(shipperId, imageUrl);
+        if (currentUser != null) currentUser.setAvatarUrl(imageUrl);
     }
 
     // ==================== LOAD PROFILE ====================
     private void loadProfile() {
-        // Load User
-        db.collection("USERS")
-                .document(shipperId)
-                .get()
-                .addOnSuccessListener(doc -> {
-                    if (doc.exists()) {
-                        currentUser = doc.toObject(User.class);
-                        currentUser.setUserId(doc.getId());
-                        displayUserInfo();
+        if (viewModel != null && !TextUtils.isEmpty(shipperId)) {
+            viewModel.load(shipperId);
+        }
+    }
 
-                        String avatarUrl = doc.getString("avatarUrl");
-                        if (!TextUtils.isEmpty(avatarUrl)) {
-                            Glide.with(this)
-                                    .load(avatarUrl)
-                                    .circleCrop()
-                                    .placeholder(R.drawable.delivery_man)
-                                    .error(R.drawable.delivery_man)
-                                    .into(imgAvatar);
-                        }
-                    } else {
-                        Toast.makeText(this, "Không tìm thấy shipper", Toast.LENGTH_SHORT).show();
-                        finish();
-                    }
-                })
-                .addOnFailureListener(e -> Toast.makeText(this, "Lỗi tải user: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+    private void observeViewModel() {
+        viewModel.getDetail().observe(this, data -> {
+            if (data == null) return;
+            currentUser = data.user;
+            currentShipperDetail = data.detail;
+            shipperDetailId = data.detailId;
+            displayUserInfo();
+            displayShipperDetail();
+            txtTotalOrders.setText(data.completedOrders + " đơn");
+            String avatarUrl = currentUser.getAvatarUrl();
+            if (!TextUtils.isEmpty(avatarUrl)) {
+                Glide.with(this).load(avatarUrl).circleCrop()
+                        .placeholder(R.drawable.delivery_man)
+                        .error(R.drawable.delivery_man).into(imgAvatar);
+            } else {
+                imgAvatar.setImageResource(R.drawable.delivery_man);
+            }
+        });
 
-        // Load ShipperDetail
-        db.collection("USERS")
-                .document(shipperId)
-                .collection("SHIPPER_DETAILS")
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    if (!queryDocumentSnapshots.isEmpty()) {
-                        DocumentSnapshot doc = queryDocumentSnapshots.getDocuments().get(0);
-                        shipperDetailId = doc.getId();
-                        currentShipperDetail = doc.toObject(ShipperDetail.class);
-                        displayShipperDetail();
-                    } else {
-                        shipperDetailId = shipperId;
-                        currentShipperDetail = new ShipperDetail();
-                        currentShipperDetail.setShipperId(shipperId);
-                        Map<String, Object> data = new HashMap<>();
-                        data.put("shipperId", shipperId);
-                        db.collection("USERS")
-                                .document(shipperId)
-                                .collection("SHIPPER_DETAILS")
-                                .document(shipperDetailId)
-                                .set(data)
-                                .addOnSuccessListener(aVoid -> {})
-                                .addOnFailureListener(e -> Toast.makeText(this, "Lỗi tạo detail: " + e.getMessage(), Toast.LENGTH_SHORT).show());
-                        displayShipperDetail();
-                    }
-                })
-                .addOnFailureListener(e -> Toast.makeText(this, "Lỗi tải chi tiết: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+        viewModel.getMessage().observe(this, message -> {
+            if (!TextUtils.isEmpty(message)) {
+                Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+            }
+        });
 
-        loadStatistics();
+        viewModel.getOperationSuccess().observe(this, success -> {
+            if (success == null) return;
+            if (btnEdit != null) {
+                btnEdit.setEnabled(true);
+                if (success && isEditing) disableEditing();
+                else if (!success && isEditing) btnEdit.setText("Lưu");
+            }
+        });
+
+        viewModel.getDeleted().observe(this, deleted -> {
+            if (Boolean.TRUE.equals(deleted)) finish();
+        });
     }
 
     private void displayUserInfo() {
@@ -391,20 +364,6 @@ public class ShipperDetailActivity extends AppCompatActivity {
         edtCitizenId.setText(currentShipperDetail.getCitizenId() != null ? currentShipperDetail.getCitizenId() : "");
         edtLicensePlate.setText(currentShipperDetail.getLicensePlate() != null ? currentShipperDetail.getLicensePlate() : "");
         edtAddress.setText(currentShipperDetail.getAddress() != null ? currentShipperDetail.getAddress() : "");
-    }
-
-    private void loadStatistics() {
-        db.collection("ORDERS")
-                .whereEqualTo("shipperId", shipperId)
-                .whereEqualTo("status", "COMPLETED")
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    int count = queryDocumentSnapshots.size();
-                    txtTotalOrders.setText(count + " đơn");
-                })
-                .addOnFailureListener(e -> txtTotalOrders.setText("0 đơn"));
-
-        txtSalary.setText("0đ"); // Tạm thời
     }
 
     // ==================== EDIT MODE ====================
@@ -478,71 +437,23 @@ public class ShipperDetailActivity extends AppCompatActivity {
             edtEmail.requestFocus();
             return;
         }
+        if (TextUtils.isEmpty(shipperDetailId)) {
+            Toast.makeText(this, "Chưa tải được thông tin chi tiết", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
         btnEdit.setEnabled(false);
         btnEdit.setText("Đang lưu...");
-
-        Map<String, Object> userUpdates = new HashMap<>();
-        userUpdates.put("fullName", fullName);
-        userUpdates.put("phone", phone);
-        userUpdates.put("email", email);
-
-        db.collection("USERS")
-                .document(shipperId)
-                .update(userUpdates)
-                .addOnSuccessListener(aVoid -> {
-                    Map<String, Object> detailUpdates = new HashMap<>();
-                    detailUpdates.put("citizenId", citizenId);
-                    detailUpdates.put("licensePlate", licensePlate);
-                    detailUpdates.put("address", address);
-
-                    db.collection("USERS")
-                            .document(shipperId)
-                            .collection("SHIPPER_DETAILS")
-                            .document(shipperDetailId)
-                            .set(detailUpdates, com.google.firebase.firestore.SetOptions.merge())
-                            .addOnSuccessListener(aVoid2 -> {
-                                Toast.makeText(this, "Cập nhật thành công!", Toast.LENGTH_SHORT).show();
-                                currentUser.setFullName(fullName);
-                                currentUser.setPhone(phone);
-                                currentUser.setEmail(email);
-                                displayUserInfo();
-                                if (currentShipperDetail != null) {
-                                    currentShipperDetail.setCitizenId(citizenId);
-                                    currentShipperDetail.setLicensePlate(licensePlate);
-                                    currentShipperDetail.setAddress(address);
-                                    displayShipperDetail();
-                                }
-                                disableEditing();
-                                btnEdit.setEnabled(true);
-                            })
-                            .addOnFailureListener(e -> {
-                                Toast.makeText(this, "Lỗi cập nhật chi tiết: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                                btnEdit.setEnabled(true);
-                                btnEdit.setText("Lưu");
-                            });
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Lỗi cập nhật: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    btnEdit.setEnabled(true);
-                    btnEdit.setText("Lưu");
-                });
+        viewModel.save(shipperId, shipperDetailId, fullName, phone, email,
+                citizenId, licensePlate, address);
     }
 
     // ==================== TOGGLE LOCK ====================
     private void toggleLock() {
         if (currentUser == null) return;
-        String newStatus = "ACTIVE".equals(currentUser.getStatus()) ? "INACTIVE" : "ACTIVE";
-
-        db.collection("USERS")
-                .document(shipperId)
-                .update("status", newStatus)
-                .addOnSuccessListener(aVoid -> {
-                    currentUser.setStatus(newStatus);
-                    displayUserInfo();
-                    Toast.makeText(this, "Đã cập nhật trạng thái", Toast.LENGTH_SHORT).show();
-                })
-                .addOnFailureListener(e -> Toast.makeText(this, "Lỗi cập nhật: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+        btnLock.setEnabled(false);
+        viewModel.toggleStatus(shipperId, currentUser.getStatus());
+        btnLock.postDelayed(() -> btnLock.setEnabled(true), 500);
     }
 
     // ==================== DELETE SHIPPER ====================
@@ -551,33 +462,14 @@ public class ShipperDetailActivity extends AppCompatActivity {
                 .setTitle("Xóa nhân viên")
                 .setMessage("Bạn có chắc muốn xóa nhân viên này?")
                 .setPositiveButton("Xóa", (dialog, which) -> {
-                    ProgressDialog progressDialog = new ProgressDialog(this);
-                    progressDialog.setMessage("Đang xóa...");
-                    progressDialog.show();
-
-                    db.collection("USERS")
-                            .document(shipperId)
-                            .collection("SHIPPER_DETAILS")
-                            .document(shipperDetailId)
-                            .delete()
-                            .addOnSuccessListener(aVoid -> {
-                                db.collection("USERS")
-                                        .document(shipperId)
-                                        .delete()
-                                        .addOnSuccessListener(aVoid2 -> {
-                                            progressDialog.dismiss();
-                                            Toast.makeText(this, "Đã xóa nhân viên", Toast.LENGTH_SHORT).show();
-                                            finish();
-                                        })
-                                        .addOnFailureListener(e -> {
-                                            progressDialog.dismiss();
-                                            Toast.makeText(this, "Lỗi xóa user: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                                        });
-                            })
-                            .addOnFailureListener(e -> {
-                                progressDialog.dismiss();
-                                Toast.makeText(this, "Lỗi xóa chi tiết: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                            });
+                    ProgressDialog dialogProgress = new ProgressDialog(this);
+                    dialogProgress.setMessage("Đang xóa...");
+                    dialogProgress.setCancelable(false);
+                    dialogProgress.show();
+                    viewModel.getDeleted().observe(this, deleted -> {
+                        if (deleted != null) dialogProgress.dismiss();
+                    });
+                    viewModel.delete(shipperId, shipperDetailId);
                 })
                 .setNegativeButton("Hủy", null)
                 .show();
