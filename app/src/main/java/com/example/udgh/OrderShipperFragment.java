@@ -3,6 +3,9 @@ package com.example.udgh;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.widget.EditText;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -10,7 +13,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.widget.SearchView;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -29,7 +31,7 @@ import java.util.Arrays;
 public class OrderShipperFragment extends Fragment {
 
     private TabLayout tabLayout;
-    private SearchView searchView;
+    private EditText searchView;
     private RecyclerView rvOrder;
     private TextView txtTotalOrder;
 
@@ -93,18 +95,12 @@ public class OrderShipperFragment extends Fragment {
         });
 
         // Setup SearchView
-        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-            @Override
-            public boolean onQueryTextSubmit(String query) {
-                filterOrders(query);
-                return true;
+        searchView.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                filterOrders(s.toString());
             }
-
-            @Override
-            public boolean onQueryTextChange(String newText) {
-                filterOrders(newText);
-                return true;
-            }
+            @Override public void afterTextChanged(Editable s) {}
         });
 
         // Mặc định tab Tất cả
