@@ -47,21 +47,22 @@
                 <ImageView
                     android:layout_width="24dp"
                     android:layout_height="24dp"
-                    android:src="@android:drawable/ic_menu_search"
+                    android:src="@drawable/ic_search"
                     app:tint="@color/gray"/>
 
                 <EditText
                     android:id="@+id/edtSearch"
                     android:layout_width="0dp"
-                    android:layout_height="wrap_content"
+                    android:layout_height="52dp"
                     android:padding="12dp"
                     android:layout_weight="1"
                     android:layout_marginStart="12dp"
-                    android:background="@null"
+                    android:background="@android:color/transparent"
                     android:hint="Tìm kiếm mã đơn..."
                     android:inputType="text"
                     android:textColor="@color/black"
-                    android:textColorHint="@color/gray"/>
+                    android:textColorHint="@color/gray"
+                    android:textSize="16sp"/>
 
             </LinearLayout>
 
