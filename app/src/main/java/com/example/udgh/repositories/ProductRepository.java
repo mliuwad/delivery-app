@@ -25,10 +25,16 @@ public class ProductRepository {
     }
 
     // TẢI DANH SÁCH SẢN PHẨM
-    public void getProducts(ResultCallback<List<Product>> callback) {
-
-        db.collection(COLLECTION)
-                .get()
+    public void getProducts(String ownerUid, boolean isAdmin, ResultCallback<List<Product>> callback) {
+        com.google.firebase.firestore.Query query = db.collection(COLLECTION);
+        if (!isAdmin) {
+            if (ownerUid == null || ownerUid.trim().isEmpty()) {
+                callback.onError(new IllegalStateException("Không xác định được chủ shop"));
+                return;
+            }
+            query = query.whereEqualTo("createdBy", ownerUid);
+        }
+        query.get()
                 .addOnSuccessListener(snapshot -> {
 
                     List<Product> products = new ArrayList<>();
@@ -65,10 +71,15 @@ public class ProductRepository {
                 .addOnFailureListener(callback::onError);
     }
 
-    // THÊM SẢN PHẨM
+    public void getProducts(ResultCallback<List<Product>> callback) {\n        getProducts(null, true, callback);\n    }\n\n    // THÊM SẢN PHẨM
     public void addProduct(
             Product product,
             ResultCallback<String> callback) {
+        String uid = com.google.firebase.auth.FirebaseAuth.getInstance().getUid();
+        if (uid == null || !uid.equals(product.getCreatedBy())) {
+            callback.onError(new SecurityException("Không xác định được chủ shop"));
+            return;
+        }
 
         db.collection(COLLECTION)
                 .get()
@@ -125,15 +136,18 @@ public class ProductRepository {
         updates.put("description", product.getDescription());
         updates.put("weight", product.getWeight());
         updates.put("price", product.getPrice());
-        updates.put("createdBy", product.getCreatedBy());
         updates.put("imageUrl", product.getImageUrl());
 
-        db.collection(COLLECTION)
-                .document(product.getProductId())
-                .update(updates)
-                .addOnSuccessListener(unused ->
-                        callback.onSuccess(null))
-                .addOnFailureListener(callback::onError);
+        com.google.firebase.firestore.DocumentReference ref = db.collection(COLLECTION).document(product.getProductId());
+        String uid = com.google.firebase.auth.FirebaseAuth.getInstance().getUid();
+        db.runTransaction(transaction -> {
+            com.google.firebase.firestore.DocumentSnapshot snapshot = transaction.get(ref);
+            if (uid == null || !snapshot.exists() || !uid.equals(snapshot.getString("createdBy"))) {
+                throw new SecurityException("Bạn chỉ được sửa sản phẩm của shop mình");
+            }
+            transaction.update(ref, updates);
+            return null;
+        }).addOnSuccessListener(unused -> callback.onSuccess(null)).addOnFailureListener(callback::onError);
     }
 
     // NGỪNG KINH DOANH
@@ -141,12 +155,16 @@ public class ProductRepository {
             String productId,
             ResultCallback<Void> callback) {
 
-        db.collection(COLLECTION)
-                .document(productId)
-                .update("isActive", false)
-                .addOnSuccessListener(unused ->
-                        callback.onSuccess(null))
-                .addOnFailureListener(callback::onError);
+        com.google.firebase.firestore.DocumentReference ref = db.collection(COLLECTION).document(productId);
+        String uid = com.google.firebase.auth.FirebaseAuth.getInstance().getUid();
+        db.runTransaction(transaction -> {
+            com.google.firebase.firestore.DocumentSnapshot snapshot = transaction.get(ref);
+            if (uid == null || !snapshot.exists() || !uid.equals(snapshot.getString("createdBy"))) {
+                throw new SecurityException("Bạn chỉ được ngừng kinh doanh sản phẩm của shop mình");
+            }
+            transaction.update(ref, "isActive", false);
+            return null;
+        }).addOnSuccessListener(unused -> callback.onSuccess(null)).addOnFailureListener(callback::onError);
     }
 
 
