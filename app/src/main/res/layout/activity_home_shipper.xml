@@ -11,7 +11,7 @@
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
+        android:layout_height="52dp"
         android:background="@color/primary"
         app:menu="@menu/shipper_home_toolbar_menu"
         app:title="Trang chủ"
@@ -30,10 +30,11 @@
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottomNavigation"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@color/primary"
-        app:itemIconTint="@color/background"
-        app:itemTextColor="@color/background"
+        android:layout_height="64dp"
+        android:background="@color/white"
+        android:elevation="8dp"
+        app:itemIconTint="@color/shipper_nav_tint"
+        app:itemTextColor="@color/shipper_nav_tint"
         app:labelVisibilityMode="labeled"
         app:menu="@menu/menu_bottom_shipper" />
 
