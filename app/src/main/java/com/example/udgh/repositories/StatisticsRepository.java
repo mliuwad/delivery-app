@@ -47,6 +47,7 @@ public class StatisticsRepository {
         Task<QuerySnapshot> ordersTask = db.collection("ORDERS").get();
         List<Task<QuerySnapshot>> salaryTasks = new ArrayList<>();
         List<String> monthLabels = new ArrayList<>();
+        int selectedIndex = -1;
 
         Calendar current = Calendar.getInstance();
         current.set(Calendar.DAY_OF_MONTH, 1);
@@ -55,6 +56,7 @@ public class StatisticsRepository {
             int month = current.get(Calendar.MONTH) + 1;
             int year = current.get(Calendar.YEAR);
             monthLabels.add("Tháng " + month);
+            if (month == selectedMonth && year == selectedYear) selectedIndex = i;
             salaryTasks.add(db.collection("SALARIES")
                     .whereEqualTo("month", month)
                     .whereEqualTo("year", year).get());
@@ -111,7 +113,7 @@ public class StatisticsRepository {
                         data.getMonthLabels().add(monthLabels.get(i));
                         data.getMonthlyRevenue().add((float) total);
 
-                        if (i == 11) {
+                        if (i == selectedIndex) {
                             data.setTotalRevenue(total);
                             data.setShipperCount(snapshot.size());
                             long completed = 0;
