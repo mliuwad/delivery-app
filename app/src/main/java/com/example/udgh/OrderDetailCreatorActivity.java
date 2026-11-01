@@ -94,7 +94,7 @@ public class OrderDetailCreatorActivity extends AppCompatActivity {
 
         orderList = new ArrayList<>();
         orderListFull = new ArrayList<>();
-        orderAdapter = new OrderAdapter(orderList);
+        orderAdapter = new OrderAdapter(orderList, CreatorOrderDetailActivity.class);
         rvOrder.setLayoutManager(new LinearLayoutManager(this));
         rvOrder.setAdapter(orderAdapter);
 
