@@ -1,114 +1,115 @@
 package com.example.udgh;
 
 import android.os.Bundle;
-
-import androidx.activity.EdgeToEdge;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
+import android.text.TextUtils;
+import android.util.Patterns;
+import android.view.View;
 import android.widget.ImageButton;
 import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.activity.EdgeToEdge;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.ViewModelProvider;
+
+import com.example.udgh.viewmodels.RegistrationViewModel;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
+
 public class RegisterActivity extends AppCompatActivity {
     private ImageButton btnBack;
-
-    private TextInputEditText edtFullName;
-    private TextInputEditText edtEmail;
-    private TextInputEditText edtPassword;
-    private TextInputEditText edtConfirmPassword;
-
+    private TextInputEditText edtFullName, edtEmail, edtPassword, edtConfirmPassword;
     private RadioGroup rgRole;
-
     private MaterialButton btnRegister;
-
     private TextView txtLogin;
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    private RegistrationViewModel viewModel;
+
+    @Override protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_register);
-        /*
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
-        });
-        */
-        // Ánh xạ
-        btnBack = findViewById(R.id.btnBack);
 
+        btnBack = findViewById(R.id.btnBack);
         edtFullName = findViewById(R.id.edtFullName);
         edtEmail = findViewById(R.id.edtEmail);
         edtPassword = findViewById(R.id.edtPassword);
         edtConfirmPassword = findViewById(R.id.edtConfirmPassword);
-
         rgRole = findViewById(R.id.rgRole);
-
         btnRegister = findViewById(R.id.btnRegister);
-
         txtLogin = findViewById(R.id.txtLogin);
 
-        // Nút quay lại
+        viewModel = new ViewModelProvider(this).get(RegistrationViewModel.class);
+        observeViewModel();
+
         btnBack.setOnClickListener(v -> finish());
-
-        // Nút đăng ký
+        txtLogin.setOnClickListener(v -> finish());
         btnRegister.setOnClickListener(v -> register());
-
     }
+
+    private void observeViewModel() {
+        viewModel.getLoading().observe(this, loading -> {
+            boolean isLoading = Boolean.TRUE.equals(loading);
+            btnRegister.setEnabled(!isLoading);
+            btnRegister.setText(isLoading ? "Đang đăng ký..." : "Đăng ký");
+            edtFullName.setEnabled(!isLoading);
+            edtEmail.setEnabled(!isLoading);
+            edtPassword.setEnabled(!isLoading);
+            edtConfirmPassword.setEnabled(!isLoading);
+            rgRole.setEnabled(!isLoading);
+        });
+        viewModel.getError().observe(this, message -> {
+            if (!TextUtils.isEmpty(message))
+                Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+        });
+        viewModel.getRegistered().observe(this, success -> {
+            if (Boolean.TRUE.equals(success)) {
+                Toast.makeText(this, "Đăng ký thành công. Vui lòng đăng nhập.", Toast.LENGTH_LONG).show();
+                finish();
+            }
+        });
+    }
+
     private void register() {
+        String fullName = textOf(edtFullName);
+        String email = textOf(edtEmail);
+        String password = textOf(edtPassword);
+        String confirmPassword = textOf(edtConfirmPassword);
 
-        String fullName = edtFullName.getText().toString().trim();
-        String email = edtEmail.getText().toString().trim();
-        String password = edtPassword.getText().toString().trim();
-        String confirmPassword = edtConfirmPassword.getText().toString().trim();
-
-        if (fullName.isEmpty()
-                || email.isEmpty()
-                || password.isEmpty()
-                || confirmPassword.isEmpty()) {
-
-            Toast.makeText(
-                    this,
-                    "Vui lòng nhập đầy đủ thông tin",
-                    Toast.LENGTH_SHORT
-            ).show();
-
+        if (fullName.isEmpty()) {
+            edtFullName.setError("Vui lòng nhập họ và tên");
+            edtFullName.requestFocus();
             return;
         }
-
+        if (email.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            edtEmail.setError("Email không hợp lệ");
+            edtEmail.requestFocus();
+            return;
+        }
+        if (password.length() < 6) {
+            edtPassword.setError("Mật khẩu phải có ít nhất 6 ký tự");
+            edtPassword.requestFocus();
+            return;
+        }
         if (!password.equals(confirmPassword)) {
-
-            Toast.makeText(
-                    this,
-                    "Mật khẩu không khớp",
-                    Toast.LENGTH_SHORT
-            ).show();
-
+            edtConfirmPassword.setError("Mật khẩu xác nhận không khớp");
+            edtConfirmPassword.requestFocus();
             return;
         }
 
-        int selectedRole = rgRole.getCheckedRadioButtonId();
-
-        if (selectedRole == -1) {
-
-            Toast.makeText(
-                    this,
-                    "Vui lòng chọn vai trò",
-                    Toast.LENGTH_SHORT
-            ).show();
-
+        int selected = rgRole.getCheckedRadioButtonId();
+        String role;
+        if (selected == R.id.rbCreator) role = "CREATOR";
+        else if (selected == R.id.rbShipper) role = "SHIPPER";
+        else {
+            Toast.makeText(this, "Vui lòng chọn vai trò", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        Toast.makeText(
-                this,
-                "Đăng ký thành công",
-                Toast.LENGTH_SHORT
-        ).show();
+        viewModel.register(fullName, email, password, role);
+    }
+
+    private String textOf(TextInputEditText editText) {
+        return editText.getText() == null ? "" : editText.getText().toString().trim();
     }
 }
-

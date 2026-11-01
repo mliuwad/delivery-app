@@ -44,7 +44,10 @@ public class StatisticsRepository {
         end.set(Calendar.MILLISECOND, 999);
         Timestamp endTime = new Timestamp(end.getTime());
 
-        Task<QuerySnapshot> ordersTask = db.collection("ORDERS").get();
+        Task<QuerySnapshot> ordersTask = db.collection("ORDERS")
+                .whereGreaterThanOrEqualTo("createdAt", startTime)
+                .whereLessThanOrEqualTo("createdAt", endTime)
+                .get();
         List<Task<QuerySnapshot>> salaryTasks = new ArrayList<>();
         List<String> monthLabels = new ArrayList<>();
         int selectedIndex = -1;
