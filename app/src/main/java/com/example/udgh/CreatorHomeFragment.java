@@ -84,10 +84,16 @@ public class CreatorHomeFragment extends Fragment {
         XAxis xAxis = chartRevenue.getXAxis();
         xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
         xAxis.setGranularity(1f);
+        Calendar firstMonth = Calendar.getInstance();
+        firstMonth.set(Calendar.DAY_OF_MONTH, 1);
+        firstMonth.add(Calendar.MONTH, -11);
+        final Calendar labelCalendar = (Calendar) firstMonth.clone();
         xAxis.setValueFormatter(new ValueFormatter() {
             @Override public String getFormattedValue(float value) {
-                int month = ((int) value % 12) + 1;
-                return "T" + month;
+                Calendar monthCalendar = (Calendar) labelCalendar.clone();
+                monthCalendar.add(Calendar.MONTH, (int) value);
+                return (monthCalendar.get(Calendar.MONTH) + 1) + "/"
+                        + String.valueOf(monthCalendar.get(Calendar.YEAR)).substring(2);
             }
         });
     }
