@@ -46,6 +46,11 @@ public class ShipperManagementActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_shipper_management);
 
+        RoleAccess.requireRole(this, "ADMIN", this::initializeAdminScreen);
+    }
+
+    private void initializeAdminScreen() {
+
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
@@ -118,6 +123,7 @@ public class ShipperManagementActivity extends AppCompatActivity {
         });
 
         loadShippers();
+    
     }
 
     private void loadShippers() {
