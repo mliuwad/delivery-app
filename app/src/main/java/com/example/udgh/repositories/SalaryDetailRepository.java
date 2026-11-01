@@ -11,7 +11,6 @@ import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -96,15 +95,18 @@ public class SalaryDetailRepository {
         db.collection("ORDERS")
                 .whereEqualTo("shipperId", shipperId)
                 .whereEqualTo("status", "COMPLETED")
-                .whereGreaterThanOrEqualTo("deliveredAt", startAt)
-                .whereLessThan("deliveredAt", endAt)
                 .get()
                 .addOnSuccessListener(snapshot -> {
                     List<Order> orders = new ArrayList<>();
                     for (QueryDocumentSnapshot doc : snapshot) {
                         Order order = doc.toObject(Order.class);
                         order.setOrderId(doc.getId());
-                        orders.add(order);
+                        Timestamp deliveredAt = order.getDeliveredAt();
+                        if (deliveredAt != null
+                                && deliveredAt.compareTo(startAt) >= 0
+                                && deliveredAt.compareTo(endAt) < 0) {
+                            orders.add(order);
+                        }
                     }
                     orders.sort((a, b) -> {
                         if (a.getDeliveredAt() == null && b.getDeliveredAt() == null) return 0;
