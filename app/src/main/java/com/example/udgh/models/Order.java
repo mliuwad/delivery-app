@@ -1,6 +1,7 @@
 package com.example.udgh.models;
 
 import com.google.firebase.Timestamp;
+import com.google.firebase.firestore.PropertyName;
 import java.util.List;
 
 public class Order {
@@ -74,7 +75,9 @@ public class Order {
     public double getDeliveryFee() { return deliveryFee; }
     public void setDeliveryFee(double deliveryFee) { this.deliveryFee = deliveryFee; }
 
+    @PropertyName("isCOD")
     public boolean isCOD() { return isCOD; }
+    @PropertyName("isCOD")
     public void setCOD(boolean COD) { isCOD = COD; }
 
     public double getCodAmount() { return codAmount; }
