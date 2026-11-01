@@ -397,6 +397,16 @@ public class CreateOrderActivity extends AppCompatActivity {
         edtNote.setText(currentOrder.getNote());
 
         deliveryFee = currentOrder.getDeliveryFee();
+
+        boolean hasCOD = currentOrder.isCOD();
+        cbCOD.setChecked(hasCOD);
+        cbCOD.setEnabled(false);
+        layoutCOD.setVisibility(hasCOD ? View.VISIBLE : View.GONE);
+        edtCOD.setText(hasCOD
+                ? String.valueOf((long) currentOrder.getCodAmount())
+                : "");
+        edtCOD.setEnabled(false);
+        edtCOD.setFocusable(false);
     }
 
     private void updateTotalPriceViewMode() {
@@ -631,28 +641,24 @@ public class CreateOrderActivity extends AppCompatActivity {
     }
 
     private void updateTotalPrice() {
-        if (selectedProductList.isEmpty()) {
-            txtProductPrice.setText("0đ");
-            txtShippingFee.setText("0đ");
-            txtTotalPrice.setText("0đ");
-            return;
-        }
         double totalProductPrice = 0;
         for (OrderDetail detail : selectedProductList) {
             totalProductPrice += detail.getPrice() * detail.getQuantity();
         }
-        double codAmount = 0;
-        if (cbCOD.isChecked() && !TextUtils.isEmpty(edtCOD.getText())) {
-            try {
-                codAmount = Double.parseDouble(edtCOD.getText().toString());
-            } catch (NumberFormatException e) {
-                codAmount = 0;
-            }
-        }
-        double total = totalProductPrice + deliveryFee + codAmount;
+
+        // COD là số tiền shipper thu hộ, bằng tiền hàng + phí vận chuyển.
+        // COD không phải khoản phí cộng thêm vào tổng tiền đơn hàng.
+        double totalToPay = totalProductPrice + deliveryFee;
+
         txtProductPrice.setText(formatCurrency((int) totalProductPrice));
         txtShippingFee.setText(formatCurrency((int) deliveryFee));
-        txtTotalPrice.setText(formatCurrency((int) total));
+        txtTotalPrice.setText(formatCurrency((int) totalToPay));
+
+        if (!isViewMode) {
+            edtCOD.setText(cbCOD.isChecked()
+                    ? String.valueOf((long) Math.round(totalToPay))
+                    : "");
+        }
     }
 
     private boolean isValidPhone(String phone) {
@@ -743,6 +749,9 @@ public class CreateOrderActivity extends AppCompatActivity {
         for (OrderDetail detail : selectedProductList) {
             totalProductPrice += detail.getPrice() * detail.getQuantity();
         }
+        double totalToPay = totalProductPrice + deliveryFee;
+        boolean isCOD = cbCOD.isChecked();
+        double codAmount = isCOD ? totalToPay : 0;
 
         btnAction.setEnabled(false);
         btnAction.setText("Đang tạo...");
@@ -761,15 +770,6 @@ public class CreateOrderActivity extends AppCompatActivity {
         orderData.put("receiverLat", receiverLat);
         orderData.put("receiverLng", receiverLng);
         orderData.put("deliveryFee", deliveryFee);
-        boolean isCOD = cbCOD.isChecked();
-        double codAmount = 0;
-        if (isCOD && !TextUtils.isEmpty(edtCOD.getText())) {
-            try {
-                codAmount = Double.parseDouble(edtCOD.getText().toString().trim());
-            } catch (NumberFormatException ignored) {
-                codAmount = 0;
-            }
-        }
         orderData.put("isCOD", isCOD);
         orderData.put("codAmount", codAmount);
         orderData.put("totalProductValue", totalProductPrice);
