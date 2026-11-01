@@ -65,7 +65,7 @@
             android:name=".CreateOrderActivity"
             android:exported="false" />
         <activity
-            android:name=".HomeCustomerActivity"
+            android:name=".HomeCreatorActivity"
             android:exported="false" />
         <activity
             android:name=".SalaryDetailActivity"
