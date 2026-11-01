@@ -4,7 +4,6 @@ import com.example.udgh.adapters.*;
 import com.example.udgh.dialogs.*;
 import com.example.udgh.utils.*;
 import com.example.udgh.fragments.*;
-import com.example.udgh.R;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -23,9 +22,7 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.udgh.OrderDetailActivity;
 import com.example.udgh.R;
-import com.example.udgh.RoleAccess;
 import com.example.udgh.adapters.OrderAdminAdapter;
 import com.example.udgh.models.Order;
 import com.example.udgh.viewmodels.OrderViewModel;
