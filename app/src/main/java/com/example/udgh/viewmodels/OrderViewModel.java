@@ -15,6 +15,38 @@ public class OrderViewModel extends ViewModel {
 
     private final OrderRepository repository;
 
+    private final MutableLiveData<OrderCreateResult> createOrderResult = new MutableLiveData<>();
+
+    public LiveData<OrderCreateResult> getCreateOrderResult() {
+        return createOrderResult;
+    }
+
+    public void createOrder(String orderId, java.util.Map<String, Object> orderData,
+                            List<com.example.udgh.models.OrderDetail> details) {
+        isLoading.setValue(true);
+        repository.createOrder(orderId, orderData, details, (success, status, error) -> {
+            isLoading.postValue(false);
+            createOrderResult.postValue(new OrderCreateResult(
+                    success, status, error));
+        });
+    }
+
+    public static class OrderCreateResult {
+        private final boolean success;
+        private final String status;
+        private final Exception error;
+
+        public OrderCreateResult(boolean success, String status, Exception error) {
+            this.success = success;
+            this.status = status;
+            this.error = error;
+        }
+
+        public boolean isSuccess() { return success; }
+        public String getStatus() { return status; }
+        public Exception getError() { return error; }
+    }
+
     private final MutableLiveData<Order> selectedOrder = new MutableLiveData<>();
     private int orderDetailRequestId = 0;
 
