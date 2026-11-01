@@ -166,7 +166,7 @@ public class ProductViewModel extends ViewModel {
     // ================== TẢI DANH SÁCH ==================
 
     public void loadProducts() {
-        loadProducts(com.google.firebase.auth.FirebaseAuth.getInstance().getUid(), false);
+        loadProducts(productRepository.getCurrentUserUid(), false);
     }
 
     public void loadProducts(String ownerUid, boolean isAdmin) {
