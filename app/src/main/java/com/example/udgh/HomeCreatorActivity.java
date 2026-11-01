@@ -23,6 +23,11 @@ public class HomeCreatorActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home_creator);
 
+        RoleAccess.requireRole(this, "CREATOR", this::initializeCreatorScreen);
+    }
+
+    private void initializeCreatorScreen() {
+
         toolbar = findViewById(R.id.toolbar);
         bottomNavigation = findViewById(R.id.bottomNavigation);
         setSupportActionBar(toolbar);
@@ -53,6 +58,7 @@ public class HomeCreatorActivity extends AppCompatActivity {
             showFragment(fragment, title);
             return true;
         });
+    
     }
 
     private void showFragment(Fragment fragment, String title) {
