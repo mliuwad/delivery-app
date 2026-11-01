@@ -31,7 +31,6 @@ import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.Timestamp;
 import com.example.udgh.viewmodels.SessionViewModel;
-import androidx.lifecycle.ViewModelProvider;
 
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;

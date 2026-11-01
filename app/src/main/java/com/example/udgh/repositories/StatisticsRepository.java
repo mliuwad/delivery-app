@@ -66,6 +66,7 @@ public class StatisticsRepository {
             current.add(Calendar.MONTH, 1);
         }
 
+        final int selectedSalaryIndex = selectedIndex;
         Tasks.whenAllComplete(ordersTask, Tasks.whenAllComplete(salaryTasks))
                 .addOnSuccessListener(ignored -> {
                     if (!ordersTask.isSuccessful()) {
@@ -116,7 +117,7 @@ public class StatisticsRepository {
                         data.getMonthLabels().add(monthLabels.get(i));
                         data.getMonthlyRevenue().add((float) total);
 
-                        if (i == selectedIndex) {
+                        if (i == selectedSalaryIndex) {
                             data.setTotalRevenue(total);
                             data.setShipperCount(snapshot.size());
                             long completed = 0;

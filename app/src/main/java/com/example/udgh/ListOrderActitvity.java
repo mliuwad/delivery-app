@@ -10,7 +10,6 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.example.udgh.databinding.ActivityListOrderBinding;
-import com.example.udgh.databinding.ActivityListOrderBinding;
 import com.google.android.material.tabs.TabLayout;
 
 public class ListOrderActitvity extends AppCompatActivity {
