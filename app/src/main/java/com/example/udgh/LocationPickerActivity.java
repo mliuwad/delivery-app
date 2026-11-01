@@ -1,14 +1,14 @@
 package com.example.udgh;
 
 import android.content.Intent;
-import android.location.Address;
-import android.location.Geocoder;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.MotionEvent;
 import android.widget.Toast;
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.ViewModelProvider;
+import com.example.udgh.repositories.LocationRepository;
+import com.example.udgh.viewmodels.LocationViewModel;
 import androidx.appcompat.widget.SearchView;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -27,9 +27,6 @@ import org.osmdroid.views.overlay.Overlay;
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider;
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.Locale;
 
 public class LocationPickerActivity extends AppCompatActivity {
 
@@ -37,6 +34,7 @@ public class LocationPickerActivity extends AppCompatActivity {
     private SearchView searchView;
     private MaterialButton btnConfirmLocation;
     private MapView mapView;
+    private LocationViewModel locationViewModel;
 
     private Marker selectedMarker;
     private GeoPoint selectedLocation;
@@ -48,6 +46,8 @@ public class LocationPickerActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_location_picker);
+        locationViewModel = new ViewModelProvider(this).get(LocationViewModel.class);
+        observeLocationViewModel();
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
@@ -145,6 +145,7 @@ public class LocationPickerActivity extends AppCompatActivity {
                 );
 
                 selectedLocation = point;
+                selectedAddress = "";
                 if (selectedMarker != null) {
                     mapView.getOverlays().remove(selectedMarker);
                 }
@@ -165,61 +166,53 @@ public class LocationPickerActivity extends AppCompatActivity {
     // ================== TÌM KIẾM ĐỊA CHỈ ==================
 
     private void searchLocation(String query) {
-        new GeocoderTask().execute(query);
+        locationViewModel.searchAddress(query);
     }
 
     private void getAddressFromLocation(GeoPoint point) {
-        new ReverseGeocoderTask().execute(point);
+        locationViewModel.resolveAddress(point.getLatitude(), point.getLongitude());
     }
 
-    // ================== ASYNC TASK ==================
-
-    private class GeocoderTask extends AsyncTask<String, Void, Address> {
-
-        @Override
-        protected Address doInBackground(String... params) {
-            try {
-                Geocoder geocoder = new Geocoder(LocationPickerActivity.this, Locale.getDefault());
-                List<Address> addresses = geocoder.getFromLocationName(params[0], 1);
-                if (addresses != null && !addresses.isEmpty()) {
-                    return addresses.get(0);
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute(Address address) {
-            if (address != null) {
-                GeoPoint location = new GeoPoint(address.getLatitude(), address.getLongitude());
-                selectedLocation = location;
-                selectedAddress = address.getAddressLine(0);
-
-                IMapController mapController = mapView.getController();
-                mapController.setZoom(15.0);
-                mapController.setCenter(location);
-
-                if (selectedMarker != null) {
-                    mapView.getOverlays().remove(selectedMarker);
-                }
-                selectedMarker = new Marker(mapView);
-                selectedMarker.setPosition(location);
-                selectedMarker.setTitle(selectedAddress);
-                mapView.getOverlays().add(selectedMarker);
-                mapView.invalidate();
-
-                Toast.makeText(LocationPickerActivity.this,
-                        "Đã tìm thấy: " + selectedAddress,
-                        Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(LocationPickerActivity.this,
-                        "Không tìm thấy địa chỉ",
-                        Toast.LENGTH_SHORT).show();
-            }
-        }
+    private void observeLocationViewModel() {
+        locationViewModel.getSearchResult().observe(this, result -> {
+            if (result == null) return;
+            GeoPoint point = new GeoPoint(result.latitude, result.longitude);
+            selectedLocation = point;
+            selectedAddress = result.address;
+            updateMarker(point, selectedAddress, true);
+            Toast.makeText(this, "Đã tìm thấy: " + selectedAddress, Toast.LENGTH_SHORT).show();
+        });
+        locationViewModel.getReverseResult().observe(this, result -> {
+            if (result == null) return;
+            selectedAddress = result.address.isEmpty()
+                    ? "Địa chỉ: " + result.latitude + ", " + result.longitude : result.address;
+            if (selectedMarker != null) selectedMarker.setTitle(selectedAddress);
+        });
+        locationViewModel.getSearchError().observe(this, message -> {
+            if (message != null && !message.isEmpty())
+                Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+        });
+        locationViewModel.getReverseError().observe(this, message -> {
+            if (selectedLocation != null)
+                selectedAddress = "Địa chỉ: " + selectedLocation.getLatitude()
+                        + ", " + selectedLocation.getLongitude();
+        });
     }
+
+    private void updateMarker(GeoPoint point, String title, boolean zoomIn) {
+        if (zoomIn) {
+            IMapController controller = mapView.getController();
+            controller.setZoom(15.0);
+            controller.setCenter(point);
+        }
+        if (selectedMarker != null) mapView.getOverlays().remove(selectedMarker);
+        selectedMarker = new Marker(mapView);
+        selectedMarker.setPosition(point);
+        selectedMarker.setTitle(title);
+        mapView.getOverlays().add(selectedMarker);
+        mapView.invalidate();
+    }
+
     private void customizeSearchView() {
 
         // Background toàn bộ ô tìm kiếm
@@ -304,35 +297,6 @@ public class LocationPickerActivity extends AppCompatActivity {
                     ),
                     android.graphics.PorterDuff.Mode.SRC_IN
             );
-        }
-    }
-
-    private class ReverseGeocoderTask extends AsyncTask<GeoPoint, Void, String> {
-
-        @Override
-        protected String doInBackground(GeoPoint... params) {
-            try {
-                Geocoder geocoder = new Geocoder(LocationPickerActivity.this, Locale.getDefault());
-                List<Address> addresses = geocoder.getFromLocation(
-                        params[0].getLatitude(),
-                        params[0].getLongitude(), 1);
-                if (addresses != null && !addresses.isEmpty()) {
-                    return addresses.get(0).getAddressLine(0);
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute(String address) {
-            if (address != null) {
-                selectedAddress = address;
-            } else {
-                selectedAddress = "Địa chỉ: " + selectedLocation.getLatitude() +
-                        ", " + selectedLocation.getLongitude();
-            }
         }
     }
 
