@@ -239,13 +239,15 @@ public class HomeCustomerActivity extends AppCompatActivity {
 
     // ================== LẤY SẢN PHẨM CỦA USER ==================
 
-    // ================== LẤY TẤT CẢ SẢN PHẨM (KHÔNG LỌC) ==================
+    // ================== LẤY SẢN PHẨM CỦA SHOP HIỆN TẠI ==================
 
     private void loadProducts() {
         if (TextUtils.isEmpty(userId)) return;
 
         // ✅ Lấy tất cả sản phẩm (không lọc theo createdBy)
         db.collection("PRODUCTS")
+                .whereEqualTo("createdBy", userId)
+                .whereEqualTo("isActive", true)
                 .limit(10)
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
