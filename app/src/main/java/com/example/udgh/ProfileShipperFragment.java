@@ -251,14 +251,16 @@ public class ProfileShipperFragment extends Fragment {
             if (success == null) return;
             if (btnEdit != null && isAdded()) {
                 btnEdit.setEnabled(true);
-                if (success && isEditing) {
-                    isEditing = false;
-                    btnEdit.setText("Cập nhật thông tin");
-                    setEditMode(false);
-                } else if (!success && isEditing) {
-                    btnEdit.setText("LƯU");
-                }
+                if (!success && isEditing) btnEdit.setText("LƯU");
             }
+        });
+
+        profileViewModel.getProfileSaved().observe(getViewLifecycleOwner(), saved -> {
+            if (saved == null || !saved || !isAdded()) return;
+            isEditing = false;
+            btnEdit.setText("Cập nhật thông tin");
+            setEditMode(false);
+            loadProfile();
         });
     }
 
