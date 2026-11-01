@@ -22,7 +22,7 @@ import com.example.udgh.models.Order;
 import com.example.udgh.viewmodels.OrderViewModel;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.tabs.TabLayout;
-import com.google.firebase.auth.FirebaseAuth;
+import com.example.udgh.viewmodels.SessionViewModel;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,6 +38,7 @@ public class OrderDetailCreatorActivity extends AppCompatActivity {
     private String userId;
     private String currentFilter = "ALL";
     private OrderViewModel orderViewModel;
+    private SessionViewModel sessionViewModel;
     private OrderAdapter orderAdapter;
     private final List<Order> orderList = new ArrayList<>();
 
@@ -55,8 +56,9 @@ public class OrderDetailCreatorActivity extends AppCompatActivity {
 
         SharedPreferences preferences = getSharedPreferences("MyAppPrefs", MODE_PRIVATE);
         userId = preferences.getString("userId", "");
-        if (TextUtils.isEmpty(userId) && FirebaseAuth.getInstance().getCurrentUser() != null) {
-            userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        if (TextUtils.isEmpty(userId)) {
+            sessionViewModel = new ViewModelProvider(this).get(SessionViewModel.class);
+            userId = sessionViewModel.getCurrentUserId();
         }
 
         if (TextUtils.isEmpty(userId)) {

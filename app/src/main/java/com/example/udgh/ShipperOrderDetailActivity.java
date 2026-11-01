@@ -25,7 +25,7 @@ import androidx.lifecycle.ViewModelProvider;
 import com.example.udgh.viewmodels.OrderViewModel;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
-import com.google.firebase.auth.FirebaseAuth;
+import com.example.udgh.viewmodels.SessionViewModel;
 
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
@@ -66,7 +66,7 @@ public class ShipperOrderDetailActivity extends AppCompatActivity {
     private TextInputEditText edtCOD;
 
     // Firebase
-    private FirebaseAuth mAuth;
+    private SessionViewModel sessionViewModel;
     private String userId;
 
     // Data
@@ -85,13 +85,11 @@ public class ShipperOrderDetailActivity extends AppCompatActivity {
             return insets;
         });
 
-        mAuth = FirebaseAuth.getInstance();
+        sessionViewModel = new ViewModelProvider(this).get(SessionViewModel.class);
 
         SharedPreferences sharedPref = getSharedPreferences("MyAppPrefs", MODE_PRIVATE);
         userId = sharedPref.getString("userId", "");
-        if (TextUtils.isEmpty(userId) && mAuth.getCurrentUser() != null) {
-            userId = mAuth.getCurrentUser().getUid();
-        }
+        if (TextUtils.isEmpty(userId)) userId = sessionViewModel.getCurrentUserId();
 
         if (TextUtils.isEmpty(userId)) {
             Toast.makeText(this, "Chưa đăng nhập", Toast.LENGTH_SHORT).show();
