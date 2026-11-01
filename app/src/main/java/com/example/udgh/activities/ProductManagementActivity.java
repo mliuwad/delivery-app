@@ -45,7 +45,9 @@ public class ProductManagementActivity extends AppCompatActivity
     private ProductAdapter productAdapter;
     private ProductViewModel productViewModel;
 
-    private String currentKeyword = "";\n    private String currentUserId;\n    private boolean isAdmin;
+    private String currentKeyword = "";
+    private String currentUserId;
+    private boolean isAdmin;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -213,7 +215,9 @@ public class ProductManagementActivity extends AppCompatActivity
     // ================== SỰ KIỆN TỪ ADAPTER ==================
 
     @Override
-    public void onEditProduct(Product product) {\n        if (isAdmin || product == null || currentUserId == null || !currentUserId.equals(product.getCreatedBy())) { Toast.makeText(this, "Bạn không có quyền sửa sản phẩm này", Toast.LENGTH_SHORT).show(); return; }\n        openProductScreen(product, "edit");
+    public void onEditProduct(Product product) {
+        if (isAdmin || product == null || currentUserId == null || !currentUserId.equals(product.getCreatedBy())) { Toast.makeText(this, "Bạn không có quyền sửa sản phẩm này", Toast.LENGTH_SHORT).show(); return; }
+        openProductScreen(product, "edit");
     }
 
     @Override
@@ -222,7 +226,9 @@ public class ProductManagementActivity extends AppCompatActivity
     }
 
     @Override
-    public void onDeactivateProduct(Product product) {\n        if (isAdmin || product == null || currentUserId == null || !currentUserId.equals(product.getCreatedBy())) { Toast.makeText(this, "Bạn không có quyền ngừng kinh doanh sản phẩm này", Toast.LENGTH_SHORT).show(); return; }\n        productViewModel.deactivateProduct(
+    public void onDeactivateProduct(Product product) {
+        if (isAdmin || product == null || currentUserId == null || !currentUserId.equals(product.getCreatedBy())) { Toast.makeText(this, "Bạn không có quyền ngừng kinh doanh sản phẩm này", Toast.LENGTH_SHORT).show(); return; }
+        productViewModel.deactivateProduct(
                 product.getProductId()
         );
     }
@@ -251,7 +257,8 @@ public class ProductManagementActivity extends AppCompatActivity
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        if (item.getItemId() == R.id.action_add) {\n            if (isAdmin) { Toast.makeText(this, "Admin không tạo sản phẩm thay cho shop", Toast.LENGTH_SHORT).show(); return true; }
+        if (item.getItemId() == R.id.action_add) {
+            if (isAdmin) { Toast.makeText(this, "Admin không tạo sản phẩm thay cho shop", Toast.LENGTH_SHORT).show(); return true; }
             Intent intent = new Intent(
                     this,
                     AddEditProductActivity.class
@@ -275,6 +282,8 @@ public class ProductManagementActivity extends AppCompatActivity
     protected void onResume() {
         super.onResume();
 
-        if (productViewModel != null) {\n            loadCurrentUserAndProducts();\n        }
+        if (productViewModel != null) {
+            loadCurrentUserAndProducts();
+        }
     }
 }
