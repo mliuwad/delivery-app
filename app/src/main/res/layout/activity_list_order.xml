@@ -30,10 +30,10 @@
 
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:layout_margin="12dp"
-            app:cardCornerRadius="28dp"
-            app:cardElevation="0dp"
+            android:layout_height="wrap_content"
+            android:layout_margin="16dp"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="2dp"
             app:strokeColor="#E0E0E0"
             app:strokeWidth="1dp">
 
@@ -42,11 +42,11 @@
                 android:layout_height="match_parent"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:paddingHorizontal="16dp">
+                android:padding="4dp">
 
                 <ImageView
-                    android:layout_width="22dp"
-                    android:layout_height="22dp"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
                     android:src="@android:drawable/ic_menu_search"
                     app:tint="@color/gray"/>
 
@@ -54,6 +54,7 @@
                     android:id="@+id/edtSearch"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:padding="12dp"
                     android:layout_weight="1"
                     android:layout_marginStart="12dp"
                     android:background="@null"
