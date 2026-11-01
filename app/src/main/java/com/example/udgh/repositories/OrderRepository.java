@@ -220,6 +220,46 @@ public class OrderRepository {
     /**
      * Tải một đơn hàng và các dòng chi tiết của đơn.
      */
+    public void createOrder(String orderId, Map<String, Object> orderData,
+                            List<OrderDetail> orderDetails, ActionCallback callback) {
+        if (orderId == null || orderId.trim().isEmpty()
+                || orderData == null || orderDetails == null || orderDetails.isEmpty()) {
+            callback.onResult(false, null,
+                    new IllegalArgumentException("Dữ liệu đơn hàng không đầy đủ"));
+            return;
+        }
+
+        com.google.firebase.firestore.WriteBatch batch = db.batch();
+        com.google.firebase.firestore.DocumentReference orderRef =
+                db.collection(COLLECTION).document(orderId);
+        batch.set(orderRef, orderData);
+
+        for (int i = 0; i < orderDetails.size(); i++) {
+            OrderDetail detail = orderDetails.get(i);
+            if (detail == null) {
+                callback.onResult(false, null,
+                        new IllegalArgumentException("Chi tiết sản phẩm không hợp lệ"));
+                return;
+            }
+
+            Map<String, Object> detailData = new HashMap<>();
+            detailData.put("productId", detail.getProductId());
+            detailData.put("productName", detail.getProductName());
+            detailData.put("description", detail.getDescription() != null ? detail.getDescription() : "");
+            detailData.put("weight", detail.getWeight());
+            detailData.put("price", detail.getPrice());
+            detailData.put("quantity", detail.getQuantity());
+            detailData.put("imageUrl", detail.getImageUrl() != null ? detail.getImageUrl() : "");
+
+            String detailId = String.format(java.util.Locale.ROOT, "ODT%03d", i + 1);
+            batch.set(orderRef.collection("ORDER_DETAILS").document(detailId), detailData);
+        }
+
+        batch.commit()
+                .addOnSuccessListener(unused -> callback.onResult(true, "CREATED", null))
+                .addOnFailureListener(error -> callback.onResult(false, null, error));
+    }
+
     public void getOrderById(String orderId, ResultCallback<Order> callback) {
         if (orderId == null || orderId.trim().isEmpty()) {
             callback.onError(new IllegalArgumentException("Thiếu mã đơn hàng"));
