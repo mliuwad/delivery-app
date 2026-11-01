@@ -88,7 +88,7 @@ public class CreatorProductFragment extends Fragment implements ProductAdapter.O
     }
 
     @Override public void onEditProduct(Product product) {
-        if (product == null || !userId.equals(product.getCreatedBy())) return;
+        if (product == null || userId == null || !userId.equals(product.getCreatedBy())) return;
         Intent intent = new Intent(requireContext(), AddEditProductActivity.class);
         intent.putExtra("productId", product.getProductId());
         intent.putExtra("mode", "edit");
@@ -101,7 +101,7 @@ public class CreatorProductFragment extends Fragment implements ProductAdapter.O
         startActivity(intent);
     }
     @Override public void onDeactivateProduct(Product product) {
-        if (product != null && userId.equals(product.getCreatedBy())) viewModel.deactivateProduct(product.getProductId());
+        if (product != null && userId != null && userId.equals(product.getCreatedBy())) viewModel.deactivateProduct(product.getProductId());
     }
     @Override public void onResume() { super.onResume(); if (viewModel != null) loadProducts(); }
 }
