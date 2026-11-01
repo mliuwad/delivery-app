@@ -15,14 +15,14 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.lifecycle.ViewModelProvider;
+import com.example.udgh.viewmodels.OrderViewModel;
 
 import com.example.udgh.models.Order;
 import com.example.udgh.models.OrderDetail;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
@@ -58,9 +58,9 @@ public class OrderDetailActivity extends AppCompatActivity {
     private TextView txtProductPrice, txtShippingFee, txtTotalPrice;
 
     // Firebase
-    private FirebaseFirestore db;
     private FirebaseAuth mAuth;
     private String userId;
+    private OrderViewModel orderViewModel;
 
     // Data
     private String orderId;
@@ -78,7 +78,6 @@ public class OrderDetailActivity extends AppCompatActivity {
             return insets;
         });
 
-        db = FirebaseFirestore.getInstance();
         mAuth = FirebaseAuth.getInstance();
 
         SharedPreferences sharedPref = getSharedPreferences("MyAppPrefs", MODE_PRIVATE);
@@ -103,6 +102,8 @@ public class OrderDetailActivity extends AppCompatActivity {
         initViews();
         setupToolbar();
         setupRecyclerView();
+        orderViewModel = new ViewModelProvider(this).get(OrderViewModel.class);
+        observeOrderViewModel();
         hideCreateModeViews();
         loadOrderDetails();
     }
@@ -176,50 +177,30 @@ public class OrderDetailActivity extends AppCompatActivity {
         findViewById(R.id.orderInfoLayout).setVisibility(View.VISIBLE);
     }
 
-    private void loadOrderDetails() {
-        db.collection("ORDERS")
-                .document(orderId)
-                .get()
-                .addOnSuccessListener(documentSnapshot -> {
-                    if (documentSnapshot.exists()) {
-                        currentOrder = documentSnapshot.toObject(Order.class);
-                        currentOrder.setOrderId(documentSnapshot.getId());
-                        displayOrderInfo();
-                        loadOrderDetailsSubCollection();
-                    } else {
-                        Toast.makeText(this, "Không tìm thấy đơn hàng", Toast.LENGTH_SHORT).show();
-                        finish();
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Lỗi tải đơn: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    finish();
-                });
+    private void observeOrderViewModel() {
+        orderViewModel.getSelectedOrder().observe(this, order -> {
+            if (order == null) return;
+            currentOrder = order;
+            productList.clear();
+            if (order.getOrderDetails() != null) {
+                productList.addAll(order.getOrderDetails());
+            }
+            displayOrderInfo();
+            productAdapter.notifyDataSetChanged();
+            updateProductUI();
+            updateTotalPrice();
+        });
+
+        orderViewModel.getErrorMessage().observe(this, message -> {
+            if (message != null && !message.trim().isEmpty()) {
+                Toast.makeText(this, "Lỗi tải đơn: " + message, Toast.LENGTH_LONG).show();
+                finish();
+            }
+        });
     }
 
-    private void loadOrderDetailsSubCollection() {
-        db.collection("ORDERS")
-                .document(orderId)
-                .collection("ORDER_DETAILS")
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    productList.clear();
-                    for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
-                        OrderDetail detail = doc.toObject(OrderDetail.class);
-                        // Nếu có thể, log để kiểm tra dữ liệu
-                        // Log.d("OrderDetail", "Product: " + detail.getProductName());
-                        productList.add(detail);
-                    }
-                    productAdapter.notifyDataSetChanged();
-                    updateProductUI();    // Cập nhật hiển thị ẩn/hiện
-                    updateTotalPrice();
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Lỗi tải chi tiết đơn", Toast.LENGTH_SHORT).show();
-                    productList.clear();
-                    productAdapter.notifyDataSetChanged();
-                    updateProductUI();
-                });
+    private void loadOrderDetails() {
+        orderViewModel.loadOrderById(orderId);
     }
 
     // ================== CẬP NHẬT UI SẢN PHẨM ==================
