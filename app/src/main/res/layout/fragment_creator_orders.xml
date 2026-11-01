@@ -1,20 +1,53 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="match_parent" android:layout_height="match_parent"
-    android:orientation="vertical" android:padding="12dp">
-    <androidx.appcompat.widget.SearchView android:id="@+id/searchOrders"
-        android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:queryHint="Tìm mã đơn hoặc tên người nhận" />
-    <com.google.android.material.tabs.TabLayout android:id="@+id/tabsOrderStatus"
-        android:layout_width="match_parent" android:layout_height="wrap_content"
-        app:tabMode="scrollable" app:tabTextColor="@color/gray"
-        app:tabSelectedTextColor="@color/primary" />
-    <TextView android:id="@+id/txtTotalCreatorOrders"
-        android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:padding="10dp" android:text="Tổng số: 0 đơn hàng"
-        android:textColor="@color/gray" android:textStyle="bold" />
-    <androidx.recyclerview.widget.RecyclerView android:id="@+id/rvCreatorOrders"
-        android:layout_width="match_parent" android:layout_height="0dp"
-        android:layout_weight="1" android:clipToPadding="false" />
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/background">
+
+    <com.google.android.material.tabs.TabLayout
+        android:id="@+id/tabsOrderStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/white"
+        app:tabGravity="center"
+        app:tabIndicatorColor="@color/primary"
+        app:tabMode="scrollable"
+        app:tabSelectedTextColor="@color/primary"
+        app:tabTextColor="@color/black">
+        <com.google.android.material.tabs.TabItem android:text="Tất cả" />
+        <com.google.android.material.tabs.TabItem android:text="Chờ giao" />
+        <com.google.android.material.tabs.TabItem android:text="Đang giao" />
+        <com.google.android.material.tabs.TabItem android:text="Hoàn thành" />
+        <com.google.android.material.tabs.TabItem android:text="Đã hủy" />
+    </com.google.android.material.tabs.TabLayout>
+
+    <androidx.appcompat.widget.SearchView
+        android:id="@+id/searchOrders"
+        style="@style/SearchViewStyle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="15dp"
+        android:background="@drawable/bg_search"
+        app:iconifiedByDefault="false"
+        app:queryHint="Tìm kiếm đơn hàng..." />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvCreatorOrders"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:padding="8dp" />
+
+    <TextView
+        android:id="@+id/txtTotalCreatorOrders"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp"
+        android:text="Tổng số: 0 đơn hàng"
+        android:textColor="@color/black"
+        android:textSize="16sp"
+        android:textStyle="bold" />
 </LinearLayout>
