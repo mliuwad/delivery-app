@@ -21,9 +21,11 @@ import java.util.Locale;
 public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHolder> {
 
     private List<Order> orderList;
+    private final Class<?> detailActivity;
 
-    public OrderAdapter(List<Order> orderList) {
+    public OrderAdapter(List<Order> orderList, Class<?> detailActivity) {
         this.orderList = orderList;
+        this.detailActivity = detailActivity;
     }
 
     @NonNull
@@ -125,7 +127,7 @@ public class OrderAdapter extends RecyclerView.Adapter<OrderAdapter.OrderViewHol
         // ================== CLICK ITEM -> MỞ CHI TIẾT ĐƠN HÀNG ==================
         holder.itemView.setOnClickListener(v -> {
             Context context = v.getContext();
-            Intent intent = new Intent(context,CreateOrderActivity.class);
+            Intent intent = new Intent(context, detailActivity);
             intent.putExtra("orderId", order.getOrderId());
             context.startActivity(intent);
         });
