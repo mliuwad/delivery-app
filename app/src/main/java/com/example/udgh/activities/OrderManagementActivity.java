@@ -19,6 +19,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.udgh.OrderDetailActivity;
 import com.example.udgh.R;
+import com.example.udgh.RoleAccess;
 import com.example.udgh.adapters.OrderAdminAdapter;
 import com.example.udgh.models.Order;
 import com.example.udgh.viewmodels.OrderViewModel;
@@ -47,6 +48,11 @@ public class OrderManagementActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_order_management);
 
+        RoleAccess.requireRole(this, "ADMIN", this::initializeAdminScreen);
+    }
+
+    private void initializeAdminScreen() {
+
         setupWindowInsets();
 
         initViews();
@@ -58,6 +64,7 @@ public class OrderManagementActivity extends AppCompatActivity {
 
         // Tải danh sách đơn hàng ban đầu
         orderViewModel.loadOrders("ALL");
+    
     }
 
     private void setupWindowInsets() {

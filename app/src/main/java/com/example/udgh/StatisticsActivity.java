@@ -70,6 +70,11 @@ public class StatisticsActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_statistics);
 
+        RoleAccess.requireRole(this, "ADMIN", this::initializeAdminScreen);
+    }
+
+    private void initializeAdminScreen() {
+
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
@@ -104,6 +109,7 @@ public class StatisticsActivity extends AppCompatActivity {
         swipeRefreshLayout.setOnRefreshListener(this::loadData);
 
         loadData();
+    
     }
 
     private void setupMonthSpinner() {

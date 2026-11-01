@@ -105,6 +105,12 @@ public class LoginActivity extends AppCompatActivity {
                                         Toast.makeText(LoginActivity.this, "Không tìm thấy thông tin người dùng", Toast.LENGTH_LONG).show();
                                         return;
                                     }
+                                    String status = user.getString("status");
+                                    if (!"ACTIVE".equalsIgnoreCase(status)) {
+                                        mAuth.signOut();
+                                        Toast.makeText(LoginActivity.this, "Tài khoản đã bị khóa hoặc chưa được kích hoạt", Toast.LENGTH_LONG).show();
+                                        return;
+                                    }
                                     String role = user.getString("role");
                                     Intent intent;
                                     if ("ADMIN".equalsIgnoreCase(role)) {
@@ -121,8 +127,10 @@ public class LoginActivity extends AppCompatActivity {
                                     startActivity(intent);
                                     finish();
                                 })
-                                .addOnFailureListener(e ->
-                                        Toast.makeText(LoginActivity.this, "Không thể tải thông tin tài khoản: " + e.getMessage(), Toast.LENGTH_LONG).show());
+                                .addOnFailureListener(e -> {
+                                    mAuth.signOut();
+                                    Toast.makeText(LoginActivity.this, "Không thể xác minh tài khoản. Vui lòng thử lại.", Toast.LENGTH_LONG).show();
+                                });
                     } else {
                         // Phân tích lỗi chi tiết
                         String errorMessage = getErrorMessage(task.getException());

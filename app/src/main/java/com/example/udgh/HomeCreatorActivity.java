@@ -23,11 +23,16 @@ public class HomeCreatorActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home_creator);
 
+        RoleAccess.requireRole(this, "CREATOR", () -> initializeCreatorScreen(savedInstanceState == null));
+    }
+
+    private void initializeCreatorScreen(boolean isFirstCreation) {
+
         toolbar = findViewById(R.id.toolbar);
         bottomNavigation = findViewById(R.id.bottomNavigation);
         setSupportActionBar(toolbar);
 
-        if (savedInstanceState == null) {
+        if (isFirstCreation) {
             bottomNavigation.setSelectedItemId(R.id.nav_creator_home);
             showFragment(new CreatorHomeFragment(), "Trang chủ");
         }
@@ -53,6 +58,7 @@ public class HomeCreatorActivity extends AppCompatActivity {
             showFragment(fragment, title);
             return true;
         });
+    
     }
 
     private void showFragment(Fragment fragment, String title) {
