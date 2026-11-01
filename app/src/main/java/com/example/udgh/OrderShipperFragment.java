@@ -67,7 +67,7 @@ public class OrderShipperFragment extends Fragment {
         // Setup RecyclerView
         orderList = new ArrayList<>();
         orderListFull = new ArrayList<>();
-        orderAdapter = new OrderAdapter(orderList);
+        orderAdapter = new OrderAdapter(orderList, ShipperOrderDetailActivity.class);
         rvOrder.setLayoutManager(new LinearLayoutManager(getContext()));
         rvOrder.setAdapter(orderAdapter);
 
