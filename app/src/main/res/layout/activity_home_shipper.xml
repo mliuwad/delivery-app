@@ -30,9 +30,10 @@
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottomNavigation"
         android:layout_width="match_parent"
-        android:layout_height="64dp"
+        android:layout_height="wrap_content"
         android:background="@color/white"
-        android:elevation="8dp"
+        android:elevation="4dp"
+        app:itemBackground="@android:color/transparent"
         app:itemIconTint="@color/shipper_nav_tint"
         app:itemTextColor="@color/shipper_nav_tint"
         app:labelVisibilityMode="labeled"
