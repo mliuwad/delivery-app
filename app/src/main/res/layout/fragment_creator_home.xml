@@ -130,9 +130,6 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
-        <com.google.android.material.button.MaterialButton android:id="@+id/btnViewOrders"
-            android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:layout_marginTop="22dp" android:text="XEM DANH SÁCH ĐƠN HÀNG"
-            android:textAllCaps="false" />
+
     </LinearLayout>
 </ScrollView>
