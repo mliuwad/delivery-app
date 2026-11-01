@@ -110,12 +110,14 @@ public class CreatorHomeFragment extends Fragment {
                         else if ("DELIVERING".equals(status)) delivering++;
                         else if ("COMPLETED".equals(status)) completed++;
 
+                        // Doanh thu chỉ tính đơn đã hoàn thành; không cộng phí vận chuyển.
                         Number amount = (Number) doc.get("totalProductValue");
                         double productValue = amount == null ? 0 : amount.doubleValue();
-                        revenue += productValue;
-
                         Timestamp createdAt = doc.getTimestamp("createdAt");
-                        if (createdAt != null) {
+                        if ("COMPLETED".equals(status)) {
+                            revenue += productValue;
+                        }
+                        if ("COMPLETED".equals(status) && createdAt != null) {
                             Calendar orderDate = Calendar.getInstance();
                             orderDate.setTime(createdAt.toDate());
                             int monthOffset = (currentYear - orderDate.get(Calendar.YEAR)) * 12
