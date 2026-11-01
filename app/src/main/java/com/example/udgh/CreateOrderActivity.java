@@ -813,6 +813,11 @@ public class CreateOrderActivity extends AppCompatActivity {
                 });
     }
 
+    private void createOrder() {
+        if (isCreating) return;
+        generateOrderId();
+    }
+
     private String formatCurrency(int price) {
         NumberFormat format = NumberFormat.getCurrencyInstance(new Locale("vi", "VN"));
         return format.format(price);
