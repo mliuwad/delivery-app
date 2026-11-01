@@ -1,22 +1,19 @@
 package com.example.udgh;
 
-import android.content.Intent;
 import android.os.Bundle;
+import android.content.Intent;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
-import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.activity.EdgeToEdge;
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -26,12 +23,10 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
-import com.bumptech.glide.Glide;
-import com.example.udgh.models.User;
 import com.example.udgh.repositories.SalaryManagementRepository;
+import com.example.udgh.adapters.SalaryManagementAdapter;
 import com.example.udgh.viewmodels.SalaryManagementViewModel;
 import com.google.android.material.appbar.MaterialToolbar;
-import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.ChipGroup;
 
 import java.text.NumberFormat;
@@ -52,7 +47,7 @@ public class SalaryManagement extends AppCompatActivity {
 
     private SalaryManagementViewModel viewModel;
     private List<SalaryManagementRepository.SalaryRow> salaryList;
-    private SalaryAdapter adapter;
+    private SalaryManagementAdapter adapter;
     private List<SalaryManagementRepository.SalaryRow> salaryListFull;
 
     private int selectedMonth;
@@ -96,7 +91,13 @@ public class SalaryManagement extends AppCompatActivity {
         salaryListFull = new ArrayList<>();
 
         setupMonthSpinner();
-        adapter = new SalaryAdapter(salaryList);
+        adapter = new SalaryManagementAdapter(salaryList, (row) -> {
+            Intent intent = new Intent(SalaryManagement.this, SalaryDetailActivity.class);
+            intent.putExtra("shipperId", row.user.getUserId());
+            intent.putExtra("month", selectedMonth);
+            intent.putExtra("year", selectedYear);
+            startActivity(intent);
+        });
         observeViewModel();
         rvSalary.setLayoutManager(new LinearLayoutManager(this));
         rvSalary.setAdapter(adapter);
@@ -245,83 +246,4 @@ public class SalaryManagement extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    // ================== MODEL ==================
-    
-
-    // ================== ADAPTER ==================
-    private class SalaryAdapter extends RecyclerView.Adapter<SalaryAdapter.ViewHolder> {
-
-        private List<SalaryManagementRepository.SalaryRow> items;
-
-        public SalaryAdapter(List<SalaryManagementRepository.SalaryRow> items) {
-            this.items = items;
-        }
-
-        @NonNull
-        @Override
-        public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            View view = getLayoutInflater().inflate(R.layout.item_salary_shipper, parent, false);
-            return new ViewHolder(view);
-        }
-
-        @Override
-        public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-            SalaryManagementRepository.SalaryRow item = items.get(position);
-            User user = item.user;
-
-            holder.txtName.setText(user.getFullName() != null ? user.getFullName() : "Không tên");
-            holder.txtCompleted.setText("Đơn hoàn thành: " + item.totalOrders);
-            holder.txtSalary.setText(formatCurrency((int) item.totalSalary));
-
-            if ("PAID".equals(item.paymentStatus)) {
-                holder.txtPaymentStatus.setText("Đã thanh toán");
-                holder.txtPaymentStatus.setTextColor(getColor(R.color.success));
-            } else {
-                holder.txtPaymentStatus.setText("Chưa thanh toán");
-                holder.txtPaymentStatus.setTextColor(getColor(R.color.warning));
-            }
-
-            // Load avatar
-            String avatarUrl = user.getAvatarUrl();
-            if (!TextUtils.isEmpty(avatarUrl)) {
-                Glide.with(SalaryManagement.this)
-                        .load(avatarUrl)
-                        .circleCrop()
-                        .placeholder(R.drawable.delivery_man)
-                        .error(R.drawable.delivery_man)
-                        .into(holder.imgAvatar);
-            } else {
-                holder.imgAvatar.setImageResource(R.drawable.delivery_man);
-            }
-
-            holder.btnDetail.setOnClickListener(v -> {
-                Intent intent = new Intent(SalaryManagement.this, SalaryDetailActivity.class);
-                intent.putExtra("shipperId", user.getUserId());
-                intent.putExtra("month", selectedMonth);
-                intent.putExtra("year", selectedYear);
-                startActivity(intent);
-            });
-        }
-
-        @Override
-        public int getItemCount() {
-            return items != null ? items.size() : 0;
-        }
-
-        class ViewHolder extends RecyclerView.ViewHolder {
-            ImageView imgAvatar;
-            TextView txtName, txtCompleted, txtSalary, txtPaymentStatus;
-            MaterialButton btnDetail;
-
-            public ViewHolder(@NonNull View itemView) {
-                super(itemView);
-                imgAvatar = itemView.findViewById(R.id.imgAvatar);
-                txtName = itemView.findViewById(R.id.txtName);
-                txtCompleted = itemView.findViewById(R.id.txtCompleted);
-                txtSalary = itemView.findViewById(R.id.txtSalary);
-                txtPaymentStatus = itemView.findViewById(R.id.txtPaymentStatus);
-                btnDetail = itemView.findViewById(R.id.btnDetail);
-            }
-        }
-    }
 }
