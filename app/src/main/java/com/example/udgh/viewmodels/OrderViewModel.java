@@ -232,7 +232,6 @@ public class OrderViewModel extends ViewModel {
     }
 
     public void loadCreatorOrders(String creatorId) {
-        currentFilter = "ALL";
         int currentRequestId = ++requestId;
         isLoading.setValue(true);
         errorMessage.setValue(null);
