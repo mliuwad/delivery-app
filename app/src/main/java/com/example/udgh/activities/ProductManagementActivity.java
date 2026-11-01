@@ -80,7 +80,6 @@ public class ProductManagementActivity extends AppCompatActivity
         setupSearch();
         observeViewModel();
 
-        loadCurrentUserAndProducts();
     }
 
     private void loadCurrentUserAndProducts() {
