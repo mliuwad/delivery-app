@@ -71,7 +71,11 @@ public class ProductRepository {
                 .addOnFailureListener(callback::onError);
     }
 
-    public void getProducts(ResultCallback<List<Product>> callback) {\n        getProducts(null, true, callback);\n    }\n\n    // THÊM SẢN PHẨM
+    public void getProducts(ResultCallback<List<Product>> callback) {
+        getProducts(null, true, callback);
+    }
+
+    // THÊM SẢN PHẨM
     public void addProduct(
             Product product,
             ResultCallback<String> callback) {
