@@ -11,7 +11,10 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 
+import com.example.udgh.repositories.DashboardRepository;
+import com.example.udgh.viewmodels.DashboardViewModel;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.data.Entry;
@@ -19,9 +22,6 @@ import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.formatter.ValueFormatter;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
-import com.google.firebase.Timestamp;
 
 import java.text.NumberFormat;
 import java.util.ArrayList;
@@ -29,8 +29,9 @@ import java.util.Calendar;
 import java.util.Locale;
 
 public class CreatorHomeFragment extends Fragment {
-    private FirebaseFirestore db;
+
     private String userId;
+    private DashboardViewModel dashboardViewModel;
     private TextView txtCreatorName, txtTotalOrders, txtTotalProductValue;
     private TextView txtWaiting, txtDelivering, txtCompleted;
     private LineChart chartRevenue;
@@ -40,7 +41,6 @@ public class CreatorHomeFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_creator_home, container, false);
-        db = FirebaseFirestore.getInstance();
         userId = FirebaseAuth.getInstance().getUid();
 
         txtCreatorName = view.findViewById(R.id.txtCreatorName);
@@ -50,24 +50,43 @@ public class CreatorHomeFragment extends Fragment {
         txtDelivering = view.findViewById(R.id.txtDelivering);
         txtCompleted = view.findViewById(R.id.txtCompleted);
         chartRevenue = view.findViewById(R.id.chartCreatorRevenue);
+
+        dashboardViewModel = new ViewModelProvider(this).get(DashboardViewModel.class);
         setupRevenueChart();
+        observeDashboard();
 
         view.findViewById(R.id.btnCreateOrder).setOnClickListener(v ->
                 startActivity(new android.content.Intent(requireContext(), CreateOrderActivity.class)));
-        loadCreatorInfo();
-        loadStatistics();
+
+        loadDashboard();
         return view;
     }
 
-    private void loadCreatorInfo() {
-        if (TextUtils.isEmpty(userId)) return;
-        db.collection("USERS").document(userId).get()
-                .addOnSuccessListener(doc -> {
-                    if (isAdded() && doc.exists()) {
-                        String name = doc.getString("fullName");
-                        txtCreatorName.setText(TextUtils.isEmpty(name) ? "Cửa hàng của bạn" : name);
-                    }
-                });
+    private void observeDashboard() {
+        dashboardViewModel.getCreatorDashboard().observe(getViewLifecycleOwner(), data -> {
+            if (data == null) return;
+            txtCreatorName.setText(TextUtils.isEmpty(data.creatorName)
+                    ? "Cửa hàng của bạn" : data.creatorName);
+            txtTotalOrders.setText(String.valueOf(data.totalOrders));
+            txtTotalProductValue.setText(formatCurrency(data.completedProductRevenue));
+            txtWaiting.setText(String.valueOf(data.waiting));
+            txtDelivering.setText(String.valueOf(data.delivering));
+            txtCompleted.setText(String.valueOf(data.completed));
+            showRevenueChart(data.monthlyRevenue);
+        });
+
+        dashboardViewModel.getErrorMessage().observe(getViewLifecycleOwner(), message -> {
+            if (!TextUtils.isEmpty(message) && isAdded()) {
+                Toast.makeText(requireContext(), "Không thể tải thống kê: " + message,
+                        Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void loadDashboard() {
+        if (dashboardViewModel != null && !TextUtils.isEmpty(userId)) {
+            dashboardViewModel.loadCreatorDashboard(userId);
+        }
     }
 
     private void setupRevenueChart() {
@@ -83,7 +102,8 @@ public class CreatorHomeFragment extends Fragment {
         firstMonth.add(Calendar.MONTH, -11);
         final Calendar labelCalendar = (Calendar) firstMonth.clone();
         xAxis.setValueFormatter(new ValueFormatter() {
-            @Override public String getFormattedValue(float value) {
+            @Override
+            public String getFormattedValue(float value) {
                 Calendar monthCalendar = (Calendar) labelCalendar.clone();
                 monthCalendar.add(Calendar.MONTH, (int) value);
                 return (monthCalendar.get(Calendar.MONTH) + 1) + "/"
@@ -92,59 +112,11 @@ public class CreatorHomeFragment extends Fragment {
         });
     }
 
-    private void loadStatistics() {
-        if (TextUtils.isEmpty(userId)) return;
-        db.collection("ORDERS").whereEqualTo("creatorId", userId).get()
-                .addOnSuccessListener(snapshot -> {
-                    if (!isAdded()) return;
-                    int waiting = 0, delivering = 0, completed = 0;
-                    double revenue = 0;
-                    Calendar now = Calendar.getInstance();
-                    int currentMonth = now.get(Calendar.MONTH);
-                    int currentYear = now.get(Calendar.YEAR);
-                    double[] monthlyRevenue = new double[12];
-
-                    for (QueryDocumentSnapshot doc : snapshot) {
-                        String status = doc.getString("status");
-                        if ("PENDING".equals(status) || "WAITING".equals(status)) waiting++;
-                        else if ("DELIVERING".equals(status)) delivering++;
-                        else if ("COMPLETED".equals(status)) completed++;
-
-                        // Doanh thu chỉ tính đơn đã hoàn thành; không cộng phí vận chuyển.
-                        Number amount = (Number) doc.get("totalProductValue");
-                        double productValue = amount == null ? 0 : amount.doubleValue();
-                        Timestamp createdAt = doc.getTimestamp("createdAt");
-                        if ("COMPLETED".equals(status)) {
-                            revenue += productValue;
-                        }
-                        if ("COMPLETED".equals(status) && createdAt != null) {
-                            Calendar orderDate = Calendar.getInstance();
-                            orderDate.setTime(createdAt.toDate());
-                            int monthOffset = (currentYear - orderDate.get(Calendar.YEAR)) * 12
-                                    + currentMonth - orderDate.get(Calendar.MONTH);
-                            if (monthOffset >= 0 && monthOffset < 12) {
-                                int chartIndex = 11 - monthOffset;
-                                monthlyRevenue[chartIndex] += productValue;
-                            }
-                        }
-                    }
-
-                    txtTotalOrders.setText(String.valueOf(snapshot.size()));
-                    txtTotalProductValue.setText(formatCurrency(revenue));
-                    txtWaiting.setText(String.valueOf(waiting));
-                    txtDelivering.setText(String.valueOf(delivering));
-                    txtCompleted.setText(String.valueOf(completed));
-                    showRevenueChart(monthlyRevenue);
-                })
-                .addOnFailureListener(e -> {
-                    if (isAdded()) Toast.makeText(requireContext(),
-                            "Không thể tải thống kê: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                });
-    }
-
     private void showRevenueChart(double[] values) {
         ArrayList<Entry> entries = new ArrayList<>();
-        for (int i = 0; i < values.length; i++) entries.add(new Entry(i, (float) values[i]));
+        for (int i = 0; i < values.length; i++) {
+            entries.add(new Entry(i, (float) values[i]));
+        }
         LineDataSet dataSet = new LineDataSet(entries, "Doanh thu tiền hàng");
         dataSet.setColor(requireContext().getColor(R.color.primary));
         dataSet.setCircleColor(requireContext().getColor(R.color.primary));
@@ -161,8 +133,9 @@ public class CreatorHomeFragment extends Fragment {
         return format.format(amount);
     }
 
-    @Override public void onResume() {
+    @Override
+    public void onResume() {
         super.onResume();
-        loadStatistics();
+        loadDashboard();
     }
 }

@@ -1,6 +1,6 @@
 package com.example.udgh;
 
-import android.content.Intent;
+import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -9,23 +9,21 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
-import com.example.udgh.models.Order;
-import com.example.udgh.models.OrderDetail;
+import com.example.udgh.repositories.DashboardRepository;
+import com.example.udgh.viewmodels.DashboardViewModel;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.text.NumberFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
@@ -36,12 +34,10 @@ public class HomeShipperFragment extends Fragment {
     private RecyclerView rvWaitingOrders;
     private SwipeRefreshLayout swipeRefreshLayout;
 
-    private FirebaseFirestore db;
-    private FirebaseAuth mAuth;
     private String userId;
-
+    private DashboardViewModel dashboardViewModel;
     private OrderAdapter waitingOrderAdapter;
-    private List<Order> waitingOrderList;
+    private final List<com.example.udgh.models.Order> waitingOrderList = new ArrayList<>();
 
     @Nullable
     @Override
@@ -49,16 +45,13 @@ public class HomeShipperFragment extends Fragment {
                              @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_home_shipper, container, false);
 
-        db = FirebaseFirestore.getInstance();
-        mAuth = FirebaseAuth.getInstance();
-
-        SharedPreferences sharedPref = requireActivity().getSharedPreferences("MyAppPrefs", android.content.Context.MODE_PRIVATE);
-        userId = sharedPref.getString("userId", "");
-        if (TextUtils.isEmpty(userId) && mAuth.getCurrentUser() != null) {
-            userId = mAuth.getCurrentUser().getUid();
+        SharedPreferences preferences = requireActivity().getSharedPreferences(
+                "MyAppPrefs", Context.MODE_PRIVATE);
+        userId = preferences.getString("userId", "");
+        if (TextUtils.isEmpty(userId) && FirebaseAuth.getInstance().getCurrentUser() != null) {
+            userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
         }
 
-        // Ánh xạ view
         txtShipperName = view.findViewById(R.id.txtShipperName);
         txtWaiting = view.findViewById(R.id.txtWaiting);
         txtDelivering = view.findViewById(R.id.txtDelivering);
@@ -68,174 +61,65 @@ public class HomeShipperFragment extends Fragment {
         rvWaitingOrders = view.findViewById(R.id.rvWaitingOrders);
         swipeRefreshLayout = view.findViewById(R.id.swipeRefreshLayout);
 
-        // Setup SwipeRefreshLayout
+        dashboardViewModel = new ViewModelProvider(this).get(DashboardViewModel.class);
         swipeRefreshLayout.setColorSchemeResources(R.color.primary);
-        swipeRefreshLayout.setOnRefreshListener(() -> {
-            loadData();
-        });
+        swipeRefreshLayout.setOnRefreshListener(this::loadDashboard);
 
-        // Setup RecyclerView
-        waitingOrderList = new ArrayList<>();
         waitingOrderAdapter = new OrderAdapter(waitingOrderList, ShipperOrderDetailActivity.class);
-        rvWaitingOrders.setLayoutManager(new LinearLayoutManager(getContext()));
+        rvWaitingOrders.setLayoutManager(new LinearLayoutManager(requireContext()));
         rvWaitingOrders.setAdapter(waitingOrderAdapter);
 
-        // Mở tab đơn hàng riêng của Shipper, không đi qua màn quản lý đơn của Admin.
         txtViewAllWaiting.setOnClickListener(v -> {
             if (getActivity() instanceof HomeShipperActivity) {
                 ((HomeShipperActivity) getActivity()).openOrdersTab();
             }
         });
 
-        loadData();
+        observeDashboard();
+        loadDashboard();
         return view;
     }
 
-    private void loadData() {
-        // Bắt đầu hiệu ứng refresh (nếu đang kéo)
-        swipeRefreshLayout.setRefreshing(true);
-
-        loadShipperInfo();
-        loadStatistics();
-        loadWaitingOrders();
-    }
-
-    private void loadShipperInfo() {
-        if (TextUtils.isEmpty(userId)) {
-            txtShipperName.setText("Người dùng");
-            return;
-        }
-        db.collection("USERS")
-                .document(userId)
-                .get()
-                .addOnSuccessListener(doc -> {
-                    if (doc.exists()) {
-                        String name = doc.getString("fullName");
-                        txtShipperName.setText(TextUtils.isEmpty(name) ? "Người dùng" : name);
-                    }
-                })
-                .addOnFailureListener(e -> txtShipperName.setText("Người dùng"));
-    }
-
-    private void loadStatistics() {
-        if (TextUtils.isEmpty(userId)) return;
-
-        // Đếm đơn chờ nhận (PENDING, shipperId rỗng)
-        db.collection("ORDERS")
-                .whereIn("status", Arrays.asList("PENDING", "WAITING"))
-                .get()
-                .addOnSuccessListener(query -> {
-                    int waitingCount = 0;
-                    for (QueryDocumentSnapshot doc : query) {
-                        if (TextUtils.isEmpty(doc.getString("shipperId"))) waitingCount++;
-                    }
-                    txtWaiting.setText(String.valueOf(waitingCount));
-                })
-                .addOnFailureListener(e -> txtWaiting.setText("0"));
-
-        // Đếm đơn đang giao của shipper này
-        db.collection("ORDERS")
-                .whereEqualTo("status", "DELIVERING")
-                .whereEqualTo("shipperId", userId)
-                .get()
-                .addOnSuccessListener(query -> {
-                    txtDelivering.setText(String.valueOf(query.size()));
-                })
-                .addOnFailureListener(e -> txtDelivering.setText("0"));
-
-        // Đếm đơn hoàn thành + tính thu nhập
-        db.collection("ORDERS")
-                .whereEqualTo("status", "COMPLETED")
-                .whereEqualTo("shipperId", userId)
-                .get()
-                .addOnSuccessListener(query -> {
-                    int count = query.size();
-                    txtCompleted.setText(String.valueOf(count));
-                    double totalIncome = 0;
-                    for (QueryDocumentSnapshot doc : query) {
-                        Double fee = doc.getDouble("deliveryFee");
-                        if (fee != null) totalIncome += fee;
-                    }
-                    txtIncome.setText(formatCurrency((int) totalIncome));
-                })
-                .addOnFailureListener(e -> {
-                    txtCompleted.setText("0");
-                    txtIncome.setText("0đ");
-                });
-    }
-
-    // ================== LOAD 2 ĐƠN CHỜ NHẬN NGẪU NHIÊN ==================
-    private void loadWaitingOrders() {
-        if (TextUtils.isEmpty(userId)) {
+    private void observeDashboard() {
+        dashboardViewModel.getShipperDashboard().observe(getViewLifecycleOwner(), data -> {
+            if (data == null) return;
+            txtShipperName.setText(TextUtils.isEmpty(data.shipperName) ? "Người dùng" : data.shipperName);
+            txtWaiting.setText(String.valueOf(data.waiting));
+            txtDelivering.setText(String.valueOf(data.delivering));
+            txtCompleted.setText(String.valueOf(data.completed));
+            txtIncome.setText(formatCurrency(data.income));
+            waitingOrderList.clear();
+            waitingOrderList.addAll(data.waitingOrders);
+            waitingOrderAdapter.notifyDataSetChanged();
             swipeRefreshLayout.setRefreshing(false);
-            return;
-        }
+        });
 
-        // Lấy TẤT CẢ đơn PENDING, shipperId rỗng (không orderBy, không limit)
-        db.collection("ORDERS")
-                .whereIn("status", Arrays.asList("PENDING", "WAITING"))
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    // Lấy đơn chưa được shipper nhận, kể cả shipperId null hoặc chưa có field.
-                    List<Order> allOrders = new ArrayList<>();
-                    for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
-                        if (TextUtils.isEmpty(doc.getString("shipperId"))) {
-                            Order order = doc.toObject(Order.class);
-                            order.setOrderId(doc.getId());
-                            allOrders.add(order);
-                        }
-                    }
-
-                    // Xáo trộn ngẫu nhiên
-                    Collections.shuffle(allOrders);
-
-                    // Chọn 2 đơn đầu (hoặc ít hơn nếu tổng số < 2)
-                    int limit = Math.min(2, allOrders.size());
-                    List<Order> randomOrders = allOrders.subList(0, limit);
-
-                    waitingOrderList.clear();
-                    waitingOrderList.addAll(randomOrders);
-                    waitingOrderAdapter.notifyDataSetChanged();
-
-                    // Load OrderDetail cho từng đơn được chọn
-                    for (Order order : waitingOrderList) {
-                        db.collection("ORDERS")
-                                .document(order.getOrderId())
-                                .collection("ORDER_DETAILS")
-                                .get()
-                                .addOnSuccessListener(detailSnapshots -> {
-                                    List<OrderDetail> details = new ArrayList<>();
-                                    for (QueryDocumentSnapshot detailDoc : detailSnapshots) {
-                                        OrderDetail detail = detailDoc.toObject(OrderDetail.class);
-                                        details.add(detail);
-                                    }
-                                    order.setOrderDetails(details);
-                                    waitingOrderAdapter.notifyDataSetChanged();
-                                })
-                                .addOnFailureListener(e -> {
-                                    order.setOrderDetails(new ArrayList<>());
-                                    waitingOrderAdapter.notifyDataSetChanged();
-                                });
-                    }
-
-                    // Dừng hiệu ứng refresh sau khi tải thành công
-                    swipeRefreshLayout.setRefreshing(false);
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(getContext(), "Lỗi tải đơn chờ nhận: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    swipeRefreshLayout.setRefreshing(false);
-                });
+        dashboardViewModel.getErrorMessage().observe(getViewLifecycleOwner(), message -> {
+            if (!TextUtils.isEmpty(message) && isAdded()) {
+                Toast.makeText(requireContext(), "Không thể tải dashboard: " + message,
+                        Toast.LENGTH_SHORT).show();
+            }
+            swipeRefreshLayout.setRefreshing(false);
+        });
     }
 
-    private String formatCurrency(int price) {
+    private void loadDashboard() {
+        if (swipeRefreshLayout != null) swipeRefreshLayout.setRefreshing(true);
+        if (dashboardViewModel != null && !TextUtils.isEmpty(userId)) {
+            dashboardViewModel.loadShipperDashboard(userId);
+        } else if (swipeRefreshLayout != null) {
+            swipeRefreshLayout.setRefreshing(false);
+        }
+    }
+
+    private String formatCurrency(double amount) {
         NumberFormat format = NumberFormat.getCurrencyInstance(new Locale("vi", "VN"));
-        return format.format(price);
+        return format.format((long) amount);
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        loadData();
+        loadDashboard();
     }
-
 }
