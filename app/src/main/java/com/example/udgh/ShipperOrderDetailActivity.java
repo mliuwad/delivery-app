@@ -4,6 +4,7 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.View;
+import android.widget.CheckBox;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -23,6 +24,7 @@ import com.google.android.material.button.MaterialButton;
 import androidx.lifecycle.ViewModelProvider;
 import com.example.udgh.viewmodels.OrderViewModel;
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
@@ -61,6 +63,9 @@ public class ShipperOrderDetailActivity extends AppCompatActivity {
 
     // Payment
     private TextView txtProductPrice, txtShippingFee, txtTotalPrice;
+    private CheckBox cbCOD;
+    private TextInputLayout layoutCOD;
+    private TextInputEditText edtCOD;
 
     // Firebase
     private FirebaseFirestore db;
@@ -141,6 +146,9 @@ public class ShipperOrderDetailActivity extends AppCompatActivity {
         txtProductPrice = findViewById(R.id.txtProductPrice);
         txtShippingFee = findViewById(R.id.txtShippingFee);
         txtTotalPrice = findViewById(R.id.txtTotalPrice);
+        cbCOD = findViewById(R.id.cbCOD);
+        layoutCOD = findViewById(R.id.layoutCOD);
+        edtCOD = findViewById(R.id.edtCOD);
     }
 
     private void setupToolbar() {
@@ -166,8 +174,6 @@ public class ShipperOrderDetailActivity extends AppCompatActivity {
         findViewById(R.id.txtAddNewProduct).setVisibility(View.GONE);
         findViewById(R.id.btnChooseSenderLocation).setVisibility(View.GONE);
         findViewById(R.id.btnChooseReceiverLocation).setVisibility(View.GONE);
-        findViewById(R.id.cbCOD).setVisibility(View.GONE);
-        findViewById(R.id.layoutCOD).setVisibility(View.GONE);
         // KHÔNG ẨN txtNoProduct (để hiển thị khi rỗng)
 
         // Disable input
@@ -319,6 +325,16 @@ public class ShipperOrderDetailActivity extends AppCompatActivity {
 
         edtNote.setText(currentOrder.getNote());
 
+        boolean hasCOD = currentOrder.isCOD();
+        cbCOD.setChecked(hasCOD);
+        cbCOD.setEnabled(false);
+        layoutCOD.setVisibility(hasCOD ? View.VISIBLE : View.GONE);
+        edtCOD.setText(hasCOD
+                ? String.valueOf((long) currentOrder.getCodAmount())
+                : "");
+        edtCOD.setEnabled(false);
+        edtCOD.setFocusable(false);
+
         txtShippingFee.setText(formatCurrency((int) currentOrder.getDeliveryFee()));
     }
 
@@ -329,7 +345,8 @@ public class ShipperOrderDetailActivity extends AppCompatActivity {
             totalProductPrice += detail.getPrice() * detail.getQuantity();
         }
         txtProductPrice.setText(formatCurrency((int) totalProductPrice));
-        double total = totalProductPrice + currentOrder.getDeliveryFee();
+        double total = totalProductPrice + currentOrder.getDeliveryFee()
+                + (currentOrder.isCOD() ? currentOrder.getCodAmount() : 0);
         txtTotalPrice.setText(formatCurrency((int) total));
     }
 
