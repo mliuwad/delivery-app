@@ -217,6 +217,41 @@ public class OrderRepository {
                 callback.onResult(false, null, error));
     }
 
+    /**
+     * Tải một đơn hàng và các dòng chi tiết của đơn.
+     */
+    public void getOrderById(String orderId, ResultCallback<Order> callback) {
+        if (orderId == null || orderId.trim().isEmpty()) {
+            callback.onError(new IllegalArgumentException("Thiếu mã đơn hàng"));
+            return;
+        }
+
+        db.collection(COLLECTION).document(orderId).get()
+                .addOnSuccessListener(document -> {
+                    if (!document.exists()) {
+                        callback.onError(new IllegalStateException("Không tìm thấy đơn hàng"));
+                        return;
+                    }
+                    Order order = document.toObject(Order.class);
+                    if (order == null) {
+                        callback.onError(new IllegalStateException("Dữ liệu đơn hàng không hợp lệ"));
+                        return;
+                    }
+                    order.setOrderId(document.getId());
+                    document.getReference().collection("ORDER_DETAILS").get()
+                            .addOnSuccessListener(snapshot -> {
+                                List<OrderDetail> details = new ArrayList<>();
+                                for (QueryDocumentSnapshot detailDoc : snapshot) {
+                                    details.add(detailDoc.toObject(OrderDetail.class));
+                                }
+                                order.setOrderDetails(details);
+                                callback.onSuccess(order);
+                            })
+                            .addOnFailureListener(callback::onError);
+                })
+                .addOnFailureListener(callback::onError);
+    }
+
     // Lấy danh sách đơn hàng theo trạng thái
     public void getOrders(String status, ResultCallback<List<Order>> callback) {
 
