@@ -20,22 +20,22 @@
         tools:replace="android:allowBackup"
         tools:targetApi="31">
         <activity
-            android:name=".CreatorOrderDetailActivity"
+            android:name=".activities.CreatorOrderDetailActivity"
             android:exported="false" />
         <activity
-            android:name=".ShipperOrderDetailActivity"
+            android:name=".activities.ShipperOrderDetailActivity"
             android:exported="false" />
         <activity
-            android:name=".OrderDetailCreatorActivity"
+            android:name=".activities.OrderDetailCreatorActivity"
             android:exported="false" />
         <activity
-            android:name=".LocationPickerActivity"
+            android:name=".activities.LocationPickerActivity"
             android:exported="false" />
         <activity
-            android:name=".SplashActivity"
+            android:name=".activities.SplashActivity"
             android:exported="true"></activity>
         <activity
-            android:name=".LoginActivity"
+            android:name=".activities.LoginActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -44,37 +44,37 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".StatisticsActivity"
+            android:name=".activities.StatisticsActivity"
             android:exported="false" />
         <activity
-            android:name=".ProfileActivity"
+            android:name=".activities.ProfileActivity"
             android:exported="false" />
         <activity
-            android:name=".SalaryStatistics"
+            android:name=".activities.SalaryStatistics"
             android:exported="false" />
         <activity
-            android:name=".NotificationActivity"
+            android:name=".activities.NotificationActivity"
             android:exported="false" />
         <activity
-            android:name=".HomeShipperActivity"
+            android:name=".activities.HomeShipperActivity"
             android:exported="false" />
         <activity
-            android:name=".ListOrderActitvity"
+            android:name=".activities.ListOrderActitvity"
             android:exported="false" />
         <activity
-            android:name=".CreateOrderActivity"
+            android:name=".activities.CreateOrderActivity"
             android:exported="false" />
         <activity
-            android:name=".HomeCreatorActivity"
+            android:name=".activities.HomeCreatorActivity"
             android:exported="false" />
         <activity
-            android:name=".SalaryDetailActivity"
+            android:name=".activities.SalaryDetailActivity"
             android:exported="false" />
         <activity
-            android:name=".SalaryManagement"
+            android:name=".activities.SalaryManagement"
             android:exported="false" />
         <activity
-            android:name=".OrderDetailActivity"
+            android:name=".activities.OrderDetailActivity"
             android:exported="false" />
         <activity
             android:name=".activities.OrderManagementActivity"
@@ -87,19 +87,19 @@
             android:name=".activities.ProductManagementActivity"
             android:exported="false" />
         <activity
-            android:name=".AddEditShipperActivity"
+            android:name=".activities.AddEditShipperActivity"
             android:exported="false" />
         <activity
-            android:name=".ShipperDetailActivity"
+            android:name=".activities.ShipperDetailActivity"
             android:exported="false" />
         <activity
-            android:name=".ShipperManagementActivity"
+            android:name=".activities.ShipperManagementActivity"
             android:exported="false" />
         <activity
-            android:name=".RegisterActivity"
+            android:name=".activities.RegisterActivity"
             android:exported="false" />
         <activity
-            android:name=".MainActivity"
+            android:name=".activities.MainActivity"
             android:exported="false" />
     </application>
 

@@ -1,6 +1,12 @@
 
 package com.example.udgh.activities;
 
+import com.example.udgh.adapters.*;
+import com.example.udgh.dialogs.*;
+import com.example.udgh.utils.*;
+import com.example.udgh.fragments.*;
+import com.example.udgh.R;
+
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;

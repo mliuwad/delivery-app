@@ -1,5 +1,10 @@
 package com.example.udgh.adapters;
 
+import com.example.udgh.activities.*;
+import com.example.udgh.fragments.*;
+import com.example.udgh.utils.*;
+import com.example.udgh.R;
+
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
