@@ -18,11 +18,11 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.example.udgh.models.User;
+import com.example.udgh.viewmodels.ShipperManagementViewModel;
 import com.google.android.material.appbar.MaterialToolbar;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,9 +35,8 @@ public class ShipperManagementActivity extends AppCompatActivity {
     private TextView txtTotal;
     private SwipeRefreshLayout swipeRefreshLayout;
 
-    private FirebaseFirestore db;
+    private ShipperManagementViewModel viewModel;
     private List<User> shipperList;
-    private List<User> shipperListFull;
     private ShipperAdapter adapter;
 
     @Override
@@ -67,7 +66,6 @@ public class ShipperManagementActivity extends AppCompatActivity {
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         toolbar.setNavigationOnClickListener(v -> finish());
 
-        db = FirebaseFirestore.getInstance();
 
         // Cấu hình màu sắc cho SearchView
         AutoCompleteTextView textView = searchView.findViewById(androidx.appcompat.R.id.search_src_text);
@@ -88,7 +86,6 @@ public class ShipperManagementActivity extends AppCompatActivity {
 
         // Setup RecyclerView
         shipperList = new ArrayList<>();
-        shipperListFull = new ArrayList<>();
         adapter = new ShipperAdapter(
                 this, // ✅ Truyền context
                 shipperList,
@@ -102,6 +99,9 @@ public class ShipperManagementActivity extends AppCompatActivity {
 
         rvShipper.setLayoutManager(new LinearLayoutManager(this));
         rvShipper.setAdapter(adapter);
+
+        viewModel = new ViewModelProvider(this).get(ShipperManagementViewModel.class);
+        observeViewModel();
 
         // SwipeRefreshLayout
         swipeRefreshLayout.setColorSchemeResources(R.color.primary);
@@ -126,85 +126,38 @@ public class ShipperManagementActivity extends AppCompatActivity {
     
     }
 
+    private void observeViewModel() {
+        viewModel.getShippers().observe(this, result -> {
+            shipperList.clear();
+            if (result != null) shipperList.addAll(result);
+            adapter.notifyDataSetChanged();
+            updateTotalCount();
+            swipeRefreshLayout.setRefreshing(false);
+        });
+
+        viewModel.getMessage().observe(this, message -> {
+            if (!TextUtils.isEmpty(message)) {
+                Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+                swipeRefreshLayout.setRefreshing(false);
+            }
+        });
+    }
+
     private void loadShippers() {
         swipeRefreshLayout.setRefreshing(true);
-
-        db.collection("USERS")
-                .whereEqualTo("role", "SHIPPER")
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    shipperList.clear();
-                    shipperListFull.clear();
-
-                    for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
-                        User user = doc.toObject(User.class);
-                        user.setUserId(doc.getId());
-                        shipperList.add(user);
-                        shipperListFull.add(user);
-                    }
-
-                    adapter.notifyDataSetChanged();
-                    updateTotalCount();
-                    swipeRefreshLayout.setRefreshing(false);
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Lỗi tải danh sách: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    swipeRefreshLayout.setRefreshing(false);
-                });
+        viewModel.loadShippers();
     }
 
     private void filterShippers(String keyword) {
-        if (TextUtils.isEmpty(keyword)) {
-            shipperList.clear();
-            shipperList.addAll(shipperListFull);
-        } else {
-            String searchText = keyword.toLowerCase().trim();
-            List<User> filtered = new ArrayList<>();
-
-            for (User user : shipperListFull) {
-                String name = user.getFullName();
-                String phone = user.getPhone();
-                String email = user.getEmail();
-
-                boolean match = false;
-                if (name != null && name.toLowerCase().contains(searchText)) match = true;
-                if (phone != null && phone.contains(searchText)) match = true;
-                if (email != null && email.toLowerCase().contains(searchText)) match = true;
-
-                if (match) {
-                    filtered.add(user);
-                }
-            }
-
-            shipperList.clear();
-            shipperList.addAll(filtered);
-        }
-
-        adapter.notifyDataSetChanged();
-        updateTotalCount();
+        viewModel.search(keyword);
     }
 
     private void updateTotalCount() {
-        String text = "Tổng số nhân viên: " + shipperList.size();
-        if (shipperList.size() != shipperListFull.size() && !shipperListFull.isEmpty()) {
-            text += " (Đã lọc)";
-        }
-        txtTotal.setText(text);
+        txtTotal.setText("Tổng số nhân viên: " + shipperList.size());
     }
 
     private void toggleShipperStatus(User shipper) {
-        String newStatus = "ACTIVE".equals(shipper.getStatus()) ? "INACTIVE" : "ACTIVE";
-        db.collection("USERS")
-                .document(shipper.getUserId())
-                .update("status", newStatus)
-                .addOnSuccessListener(aVoid -> {
-                    shipper.setStatus(newStatus);
-                    adapter.notifyDataSetChanged();
-                    Toast.makeText(this, "Cập nhật trạng thái thành công", Toast.LENGTH_SHORT).show();
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Lỗi cập nhật: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                });
+        viewModel.toggleStatus(shipper);
     }
 
     @Override
