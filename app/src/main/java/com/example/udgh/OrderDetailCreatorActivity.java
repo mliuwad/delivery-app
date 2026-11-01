@@ -53,8 +53,8 @@ public class OrderDetailCreatorActivity extends AppCompatActivity {
             return insets;
         });
 
-        SharedPreferences sharedPref = getSharedPreferences("MyAppPrefs", MODE_PRIVATE);
-        userId = sharedPref.getString("userId", "");
+        SharedPreferences preferences = getSharedPreferences("MyAppPrefs", MODE_PRIVATE);
+        userId = preferences.getString("userId", "");
         if (TextUtils.isEmpty(userId) && FirebaseAuth.getInstance().getCurrentUser() != null) {
             userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
         }
@@ -105,11 +105,11 @@ public class OrderDetailCreatorActivity extends AppCompatActivity {
     }
 
     private void setupSearchView() {
-        AutoCompleteTextView textView = searchView.findViewById(
+        AutoCompleteTextView input = searchView.findViewById(
                 androidx.appcompat.R.id.search_src_text);
-        if (textView != null) {
-            textView.setTextColor(getColor(R.color.black));
-            textView.setHintTextColor(getColor(R.color.gray));
+        if (input != null) {
+            input.setTextColor(getColor(R.color.black));
+            input.setHintTextColor(getColor(R.color.gray));
         }
 
         ImageView searchIcon = searchView.findViewById(
@@ -142,9 +142,7 @@ public class OrderDetailCreatorActivity extends AppCompatActivity {
     }
 
     private void setupTabs() {
-        if (tabLayout.getTabAt(0) != null) {
-            tabLayout.getTabAt(0).select();
-        }
+        if (tabLayout.getTabAt(0) != null) tabLayout.getTabAt(0).select();
 
         tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override
@@ -170,8 +168,6 @@ public class OrderDetailCreatorActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        if (orderViewModel != null && !TextUtils.isEmpty(userId)) {
-            loadOrders();
-        }
+        if (orderViewModel != null && !TextUtils.isEmpty(userId)) loadOrders();
     }
 }
