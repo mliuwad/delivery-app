@@ -55,6 +55,7 @@ public class ShipperDetailViewModel extends ViewModel {
     }
 
     public void toggleStatus(String shipperId, String currentStatus) {
+        operationSuccess.setValue(null);
         String next = "ACTIVE".equals(currentStatus) ? "INACTIVE" : "ACTIVE";
         repository.updateStatus(shipperId, next, new ShipperDetailRepository.Callback<Void>() {
             @Override public void onSuccess(Void ignored) {

@@ -333,9 +333,12 @@ public class ShipperDetailActivity extends AppCompatActivity {
                 if (success && isEditing) disableEditing();
                 else if (!success && isEditing) btnEdit.setText("Lưu");
             }
+            if (btnLock != null) btnLock.setEnabled(true);
         });
 
         viewModel.getDeleted().observe(this, deleted -> {
+            if (deleted == null) return;
+            if (progressDialog != null && progressDialog.isShowing()) progressDialog.dismiss();
             if (Boolean.TRUE.equals(deleted)) finish();
         });
     }
@@ -453,7 +456,6 @@ public class ShipperDetailActivity extends AppCompatActivity {
         if (currentUser == null) return;
         btnLock.setEnabled(false);
         viewModel.toggleStatus(shipperId, currentUser.getStatus());
-        btnLock.postDelayed(() -> btnLock.setEnabled(true), 500);
     }
 
     // ==================== DELETE SHIPPER ====================
@@ -462,13 +464,10 @@ public class ShipperDetailActivity extends AppCompatActivity {
                 .setTitle("Xóa nhân viên")
                 .setMessage("Bạn có chắc muốn xóa nhân viên này?")
                 .setPositiveButton("Xóa", (dialog, which) -> {
-                    ProgressDialog dialogProgress = new ProgressDialog(this);
-                    dialogProgress.setMessage("Đang xóa...");
-                    dialogProgress.setCancelable(false);
-                    dialogProgress.show();
-                    viewModel.getDeleted().observe(this, deleted -> {
-                        if (deleted != null) dialogProgress.dismiss();
-                    });
+                    progressDialog = new ProgressDialog(this);
+                    progressDialog.setMessage("Đang xóa...");
+                    progressDialog.setCancelable(false);
+                    progressDialog.show();
                     viewModel.delete(shipperId, shipperDetailId);
                 })
                 .setNegativeButton("Hủy", null)
