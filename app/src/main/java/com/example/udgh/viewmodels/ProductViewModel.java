@@ -50,10 +50,9 @@ public class ProductViewModel extends ViewModel {
 
     // ================== TẢI DANH SÁCH ==================
 
-    public void loadProducts() {
-        isLoading.setValue(true);
+    public void loadProducts() {\n        loadProducts(com.google.firebase.auth.FirebaseAuth.getInstance().getUid(), false);\n    }\n\n    public void loadProducts(String ownerUid, boolean isAdmin) {\n        isLoading.setValue(true);
 
-        productRepository.getProducts(new ProductRepository.ResultCallback<List<Product>>() {
+        productRepository.getProducts(ownerUid, isAdmin, new ProductRepository.ResultCallback<List<Product>>() {
             @Override
             public void onSuccess(List<Product> result) {
                 allProducts.clear();
