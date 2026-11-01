@@ -15,6 +15,36 @@ public class OrderViewModel extends ViewModel {
 
     private final OrderRepository repository;
 
+    private final MutableLiveData<Order> selectedOrder = new MutableLiveData<>();
+    private int orderDetailRequestId = 0;
+
+    public LiveData<Order> getSelectedOrder() {
+        return selectedOrder;
+    }
+
+    public void loadOrderById(String orderId) {
+        int currentRequest = ++orderDetailRequestId;
+        isLoading.setValue(true);
+        errorMessage.setValue(null);
+
+        repository.getOrderById(orderId, new OrderRepository.ResultCallback<Order>() {
+            @Override
+            public void onSuccess(Order order) {
+                if (currentRequest != orderDetailRequestId) return;
+                selectedOrder.postValue(order);
+                isLoading.postValue(false);
+            }
+
+            @Override
+            public void onError(Exception e) {
+                if (currentRequest != orderDetailRequestId) return;
+                isLoading.postValue(false);
+                errorMessage.postValue(e != null && e.getMessage() != null
+                        ? e.getMessage() : "Không thể tải thông tin đơn hàng");
+            }
+        });
+    }
+
     private final MutableLiveData<List<Order>> orders =
             new MutableLiveData<>(new ArrayList<>());
 
