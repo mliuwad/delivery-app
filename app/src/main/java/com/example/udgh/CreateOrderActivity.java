@@ -142,7 +142,7 @@ public class CreateOrderActivity extends AppCompatActivity {
 
         sessionViewModel = new ViewModelProvider(this).get(SessionViewModel.class);
 
-        // Lấy userId từ SharedPreferences hoặc FirebaseAuth
+        // Lấy userId từ SharedPreferences hoặc SessionViewModel
         SharedPreferences sharedPref = getSharedPreferences("MyAppPrefs", MODE_PRIVATE);
         userId = sharedPref.getString("userId", "");
         if (TextUtils.isEmpty(userId)) userId = sessionViewModel.getCurrentUserId();

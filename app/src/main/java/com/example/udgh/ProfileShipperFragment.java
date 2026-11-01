@@ -30,7 +30,7 @@ import com.example.udgh.repositories.ShipperProfileRepository;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.textfield.TextInputEditText;
-import com.google.firebase.auth.FirebaseAuth;
+import com.example.udgh.viewmodels.SessionViewModel;
 
 import org.json.JSONObject;
 
@@ -55,7 +55,7 @@ public class ProfileShipperFragment extends Fragment {
     private TextInputEditText edtFullName, edtPhone, edtEmail, edtCitizenId, edtLicensePlate, edtAddress;
     private MaterialButton btnEdit;
 
-    private FirebaseAuth mAuth;
+    private SessionViewModel sessionViewModel;
     private ShipperProfileViewModel profileViewModel;
     private String userId;
     private String shipperDetailId;
@@ -85,14 +85,12 @@ public class ProfileShipperFragment extends Fragment {
                              @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_shipper_information, container, false);
 
-        mAuth = FirebaseAuth.getInstance();
+        sessionViewModel = new ViewModelProvider(this).get(SessionViewModel.class);
         profileViewModel = new ViewModelProvider(this).get(ShipperProfileViewModel.class);
 
         SharedPreferences sharedPref = requireActivity().getSharedPreferences("MyAppPrefs", android.content.Context.MODE_PRIVATE);
         userId = sharedPref.getString("userId", "");
-        if (TextUtils.isEmpty(userId) && mAuth.getCurrentUser() != null) {
-            userId = mAuth.getCurrentUser().getUid();
-        }
+        if (TextUtils.isEmpty(userId)) userId = sessionViewModel.getCurrentUserId();
 
         imgAvatar = view.findViewById(R.id.imgAvatar);
         txtName = view.findViewById(R.id.txtName);

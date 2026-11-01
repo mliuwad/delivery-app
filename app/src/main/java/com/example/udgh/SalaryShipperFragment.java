@@ -25,6 +25,7 @@ import com.example.udgh.activities.OrderManagementActivity;
 import com.example.udgh.adapters.SalaryOrderAdapter;
 import com.example.udgh.models.Order;
 import com.example.udgh.viewmodels.SalaryShipperViewModel;
+import com.example.udgh.viewmodels.SessionViewModel;
 import com.github.mikephil.charting.charts.BarChart;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.data.BarData;
@@ -64,9 +65,8 @@ public class SalaryShipperFragment extends Fragment {
         SharedPreferences preferences = requireActivity()
                 .getSharedPreferences("MyAppPrefs", android.content.Context.MODE_PRIVATE);
         shipperId = preferences.getString("userId", "");
-        if (TextUtils.isEmpty(shipperId)
-                && com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser() != null) {
-            shipperId = com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser().getUid();
+        if (TextUtils.isEmpty(shipperId)) {
+            shipperId = new ViewModelProvider(this).get(SessionViewModel.class).getCurrentUserId();
         }
 
         spMonth = view.findViewById(R.id.spMonth);

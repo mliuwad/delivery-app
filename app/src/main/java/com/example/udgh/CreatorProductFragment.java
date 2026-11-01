@@ -24,7 +24,6 @@ import com.example.udgh.adapters.ProductAdapter;
 import com.example.udgh.models.Product;
 import com.example.udgh.viewmodels.ProductViewModel;
 
-import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.android.material.button.MaterialButton;
 
 import java.util.ArrayList;

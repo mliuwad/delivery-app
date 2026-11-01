@@ -22,7 +22,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.udgh.models.Order;
 import com.example.udgh.viewmodels.OrderViewModel;
 import com.google.android.material.tabs.TabLayout;
-import com.google.firebase.auth.FirebaseAuth;
+import com.example.udgh.viewmodels.SessionViewModel;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -50,9 +50,7 @@ public class OrderShipperFragment extends Fragment {
         SharedPreferences sharedPref = requireActivity().getSharedPreferences(
                 "MyAppPrefs", android.content.Context.MODE_PRIVATE);
         userId = sharedPref.getString("userId", "");
-        if (TextUtils.isEmpty(userId) && FirebaseAuth.getInstance().getCurrentUser() != null) {
-            userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
-        }
+        if (TextUtils.isEmpty(userId)) userId = new ViewModelProvider(this).get(SessionViewModel.class).getCurrentUserId();
 
         tabLayout = view.findViewById(R.id.tabLayout);
         searchView = view.findViewById(R.id.searchView);
