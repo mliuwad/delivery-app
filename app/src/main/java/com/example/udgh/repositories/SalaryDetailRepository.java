@@ -158,9 +158,21 @@ public class SalaryDetailRepository {
             callback.onError(new IllegalStateException("Không tìm thấy bản ghi lương để xác nhận"));
             return;
         }
-        db.collection("SALARIES").document(salaryDocumentId)
-                .update("paymentStatus", "PAID", "paymentDate", FieldValue.serverTimestamp())
-                .addOnSuccessListener(unused -> callback.onSuccess(null))
-                .addOnFailureListener(callback::onError);
+        com.google.firebase.firestore.DocumentReference salaryRef =
+                db.collection("SALARIES").document(salaryDocumentId);
+        db.runTransaction(transaction -> {
+            com.google.firebase.firestore.DocumentSnapshot salary = transaction.get(salaryRef);
+            if (!salary.exists()) {
+                throw new IllegalStateException("Không tìm thấy bản ghi lương");
+            }
+            if ("PAID".equals(salary.getString("paymentStatus"))) {
+                throw new IllegalStateException("Khoản lương này đã được xác nhận thanh toán");
+            }
+            transaction.update(salaryRef,
+                    "paymentStatus", "PAID",
+                    "paymentDate", FieldValue.serverTimestamp());
+            return null;
+        }).addOnSuccessListener(unused -> callback.onSuccess(null))
+          .addOnFailureListener(callback::onError);
     }
 }

@@ -188,6 +188,10 @@ public class OrderRepository {
                     Map<String, Object> salaryUpdates = new HashMap<>();
                     salaryUpdates.put("totalOrders", (oldOrders != null ? oldOrders : 0L) + 1L);
                     salaryUpdates.put("totalSalary", (oldSalary != null ? oldSalary : 0d) + fee);
+                    // A newly completed order creates an additional payable amount.
+                    // Reopen the monthly salary record if it had already been paid.
+                    salaryUpdates.put("paymentStatus", "UNPAID");
+                    salaryUpdates.put("paymentDate", null);
                     transaction.update(salaryRef, salaryUpdates);
                 } else {
                     java.util.Calendar calendar = java.util.Calendar.getInstance();
