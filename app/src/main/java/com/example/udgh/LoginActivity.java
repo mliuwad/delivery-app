@@ -21,6 +21,7 @@ import com.google.android.material.button.MaterialButton;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
 import com.google.firebase.auth.FirebaseAuthInvalidUserException;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 public class LoginActivity extends AppCompatActivity {
 
@@ -91,8 +92,37 @@ public class LoginActivity extends AppCompatActivity {
 
                     if (task.isSuccessful()) {
                         Toast.makeText(LoginActivity.this, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show();
-                        startActivity(new Intent(LoginActivity.this, MainActivity.class));
-                        finish();
+                        String uid = mAuth.getCurrentUser() != null
+                                ? mAuth.getCurrentUser().getUid() : null;
+                        if (uid == null) {
+                            Toast.makeText(LoginActivity.this, "Không xác định được tài khoản", Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+                        FirebaseFirestore.getInstance().collection("USERS").document(uid).get()
+                                .addOnSuccessListener(user -> {
+                                    if (!user.exists()) {
+                                        mAuth.signOut();
+                                        Toast.makeText(LoginActivity.this, "Không tìm thấy thông tin người dùng", Toast.LENGTH_LONG).show();
+                                        return;
+                                    }
+                                    String role = user.getString("role");
+                                    Intent intent;
+                                    if ("ADMIN".equalsIgnoreCase(role)) {
+                                        intent = new Intent(LoginActivity.this, MainActivity.class);
+                                    } else if ("CREATOR".equalsIgnoreCase(role)) {
+                                        intent = new Intent(LoginActivity.this, HomeCreatorActivity.class);
+                                    } else if ("SHIPPER".equalsIgnoreCase(role)) {
+                                        intent = new Intent(LoginActivity.this, HomeShipperActivity.class);
+                                    } else {
+                                        mAuth.signOut();
+                                        Toast.makeText(LoginActivity.this, "Vai trò tài khoản không hợp lệ", Toast.LENGTH_LONG).show();
+                                        return;
+                                    }
+                                    startActivity(intent);
+                                    finish();
+                                })
+                                .addOnFailureListener(e ->
+                                        Toast.makeText(LoginActivity.this, "Không thể tải thông tin tài khoản: " + e.getMessage(), Toast.LENGTH_LONG).show());
                     } else {
                         // Phân tích lỗi chi tiết
                         String errorMessage = getErrorMessage(task.getException());
