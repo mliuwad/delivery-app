@@ -1,7 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" android:id="@+id/main" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:background="@color/background">
  <com.google.android.material.tabs.TabLayout android:id="@+id/tabsOrderStatus" android:layout_width="match_parent" android:layout_height="wrap_content" android:background="@color/white" app:tabGravity="center" app:tabIndicatorColor="@color/primary" app:tabMode="scrollable" app:tabSelectedTextColor="@color/primary" app:tabTextColor="@color/gray" />
- <androidx.appcompat.widget.SearchView android:id="@+id/searchOrders" style="@style/SearchViewStyle" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginStart="16dp" android:layout_marginTop="12dp" android:layout_marginEnd="16dp" android:layout_marginBottom="8dp" android:background="@drawable/bg_search" app:iconifiedByDefault="false" app:queryHint="Tìm kiếm đơn hàng..." />
+ <androidx.cardview.widget.CardView
+  android:layout_width="match_parent" android:layout_height="wrap_content"
+  android:layout_marginStart="16dp" android:layout_marginTop="12dp"
+  android:layout_marginEnd="16dp" android:layout_marginBottom="8dp"
+  app:cardBackgroundColor="@color/white" app:cardCornerRadius="16dp" app:cardElevation="1dp">
+  <androidx.appcompat.widget.SearchView
+   android:id="@+id/searchOrders" style="@style/SearchViewStyle"
+   android:layout_width="match_parent" android:layout_height="48dp"
+   android:background="@android:color/transparent"
+   app:iconifiedByDefault="false" app:queryHint="Tìm kiếm đơn hàng..." />
+ </androidx.cardview.widget.CardView>
  <androidx.recyclerview.widget.RecyclerView android:id="@+id/rvCreatorOrders" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:clipToPadding="false" android:paddingStart="12dp" android:paddingEnd="12dp" android:paddingBottom="8dp" />
  <TextView android:id="@+id/txtTotalCreatorOrders" android:layout_width="match_parent" android:layout_height="wrap_content" android:background="@color/white" android:padding="12dp" android:text="Tổng số: 0 đơn hàng" android:textColor="@color/gray" android:textSize="14sp" android:textStyle="bold" />
 </LinearLayout>
