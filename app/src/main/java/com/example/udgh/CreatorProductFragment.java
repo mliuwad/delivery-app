@@ -23,7 +23,7 @@ import com.example.udgh.activities.AddEditProductActivity;
 import com.example.udgh.adapters.ProductAdapter;
 import com.example.udgh.models.Product;
 import com.example.udgh.viewmodels.ProductViewModel;
-import com.google.firebase.auth.FirebaseAuth;
+
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.android.material.button.MaterialButton;
 
@@ -44,8 +44,8 @@ public class CreatorProductFragment extends Fragment implements ProductAdapter.O
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_creator_products, container, false);
-        userId = FirebaseAuth.getInstance().getUid();
         viewModel = new ViewModelProvider(this).get(ProductViewModel.class);
+        userId = viewModel.getCurrentUserUid();
         RecyclerView rv = view.findViewById(R.id.rvCreatorProducts);
         etSearch = view.findViewById(R.id.etSearchCreatorProducts);
         btnClear = view.findViewById(R.id.btnClearCreatorSearch);

@@ -20,7 +20,7 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.example.udgh.repositories.DashboardRepository;
 import com.example.udgh.viewmodels.DashboardViewModel;
-import com.google.firebase.auth.FirebaseAuth;
+import com.example.udgh.viewmodels.SessionViewModel;
 
 import java.text.NumberFormat;
 import java.util.ArrayList;
@@ -48,9 +48,7 @@ public class HomeShipperFragment extends Fragment {
         SharedPreferences preferences = requireActivity().getSharedPreferences(
                 "MyAppPrefs", Context.MODE_PRIVATE);
         userId = preferences.getString("userId", "");
-        if (TextUtils.isEmpty(userId) && FirebaseAuth.getInstance().getCurrentUser() != null) {
-            userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
-        }
+        if (TextUtils.isEmpty(userId)) userId = new ViewModelProvider(this).get(SessionViewModel.class).getCurrentUserId();
 
         txtShipperName = view.findViewById(R.id.txtShipperName);
         txtWaiting = view.findViewById(R.id.txtWaiting);

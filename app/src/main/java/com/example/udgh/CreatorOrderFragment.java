@@ -20,7 +20,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.udgh.models.Order;
 import com.example.udgh.viewmodels.OrderViewModel;
 import com.google.android.material.tabs.TabLayout;
-import com.google.firebase.auth.FirebaseAuth;
+import com.example.udgh.viewmodels.SessionViewModel;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -43,7 +43,7 @@ public class CreatorOrderFragment extends Fragment {
                              @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_creator_orders, container, false);
 
-        userId = FirebaseAuth.getInstance().getUid();
+        userId = new ViewModelProvider(this).get(SessionViewModel.class).getCurrentUserId();
         tabs = view.findViewById(R.id.tabsOrderStatus);
         searchView = view.findViewById(R.id.searchOrders);
         rvOrders = view.findViewById(R.id.rvCreatorOrders);

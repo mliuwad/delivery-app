@@ -30,13 +30,13 @@ import com.bumptech.glide.request.transition.Transition;
 import com.example.udgh.viewmodels.UserAvatarViewModel;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
-import com.google.firebase.auth.FirebaseAuth;
+import com.example.udgh.viewmodels.SessionViewModel;
 
 public class HomeShipperActivity extends AppCompatActivity {
     private MaterialToolbar toolbar;
     private BottomNavigationView bottomNavigation;
     private FragmentManager fragmentManager;
-    private FirebaseAuth mAuth;
+    private SessionViewModel sessionViewModel;
     private String userId;
     private String avatarUrl;
     private UserAvatarViewModel avatarViewModel;
@@ -57,11 +57,10 @@ public class HomeShipperActivity extends AppCompatActivity {
             return insets;
         });
 
-        mAuth = FirebaseAuth.getInstance();
+        sessionViewModel = new ViewModelProvider(this).get(SessionViewModel.class);
         SharedPreferences prefs = getSharedPreferences("MyAppPrefs", MODE_PRIVATE);
         userId = prefs.getString("userId", "");
-        if (TextUtils.isEmpty(userId) && mAuth.getCurrentUser() != null)
-            userId = mAuth.getCurrentUser().getUid();
+        if (TextUtils.isEmpty(userId)) userId = sessionViewModel.getCurrentUserId();
 
         toolbar = findViewById(R.id.toolbar);
         bottomNavigation = findViewById(R.id.bottomNavigation);
@@ -147,7 +146,7 @@ public class HomeShipperActivity extends AppCompatActivity {
     }
 
     private void logout() {
-        mAuth.signOut();
+        sessionViewModel.signOut();
         getSharedPreferences("MyAppPrefs", MODE_PRIVATE).edit().clear().apply();
         Intent intent = new Intent(this, LoginActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);

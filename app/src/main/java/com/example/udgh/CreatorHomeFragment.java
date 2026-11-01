@@ -21,7 +21,7 @@ import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.formatter.ValueFormatter;
-import com.google.firebase.auth.FirebaseAuth;
+import com.example.udgh.viewmodels.SessionViewModel;
 
 import java.text.NumberFormat;
 import java.util.ArrayList;
@@ -41,7 +41,7 @@ public class CreatorHomeFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_creator_home, container, false);
-        userId = FirebaseAuth.getInstance().getUid();
+        userId = new ViewModelProvider(this).get(SessionViewModel.class).getCurrentUserId();
 
         txtCreatorName = view.findViewById(R.id.txtCreatorName);
         txtTotalOrders = view.findViewById(R.id.txtTotalOrders);

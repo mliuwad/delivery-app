@@ -4,145 +4,50 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.ViewModelProvider;
 
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.FirebaseFirestore;
+import com.example.udgh.viewmodels.SessionViewModel;
 
 public class SplashActivity extends AppCompatActivity {
+    private SessionViewModel viewModel;
 
-    private FirebaseAuth mAuth;
-    private FirebaseFirestore db;
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    @Override protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_splash);
 
-        mAuth = FirebaseAuth.getInstance();
-        db = FirebaseFirestore.getInstance();
+        viewModel = new ViewModelProvider(this).get(SessionViewModel.class);
+        viewModel.getRole().observe(this, this::navigateByRole);
+        viewModel.getError().observe(this, message -> {
+            if (message != null && !message.isEmpty()) {
+                Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+                navigateToLogin();
+            }
+        });
+        viewModel.validateCurrentSession();
+    }
 
-        FirebaseUser currentUser = mAuth.getCurrentUser();
-
-        if (currentUser == null) {
-
-            startActivity(new Intent(
-                    SplashActivity.this,
-                    LoginActivity.class
-            ));
-
-            finish();
-
+    private void navigateByRole(String role) {
+        if (role == null) {
+            navigateToLogin();
             return;
         }
-
-        loadUser(currentUser.getUid());
+        Class<?> destination;
+        switch (role) {
+            case "ADMIN": destination = MainActivity.class; break;
+            case "CREATOR": destination = HomeCreatorActivity.class; break;
+            case "SHIPPER": destination = HomeShipperActivity.class; break;
+            default:
+                viewModel.signOut();
+                navigateToLogin();
+                return;
+        }
+        startActivity(new Intent(this, destination));
+        finish();
     }
 
-    private void loadUser(String uid) {
-
-        db.collection("USERS")
-                .document(uid)
-                .get()
-
-                .addOnSuccessListener(documentSnapshot -> {
-
-                    if (!documentSnapshot.exists()) {
-
-                        mAuth.signOut();
-
-                        startActivity(new Intent(
-                                SplashActivity.this,
-                                LoginActivity.class
-                        ));
-
-                        finish();
-
-                        return;
-                    }
-
-                    String role = documentSnapshot.getString("role");
-                    String status = documentSnapshot.getString("status");
-
-                    if (!"ACTIVE".equals(status)) {
-
-                        mAuth.signOut();
-
-                        Toast.makeText(
-                                this,
-                                "Tài khoản đã bị khóa",
-                                Toast.LENGTH_SHORT
-                        ).show();
-
-                        startActivity(new Intent(
-                                SplashActivity.this,
-                                LoginActivity.class
-                        ));
-
-                        finish();
-
-                        return;
-                    }
-
-                    if ("ADMIN".equals(role)) {
-
-                        startActivity(new Intent(
-                                SplashActivity.this,
-                                MainActivity.class
-                        ));
-
-                    }
-
-                    else if ("CREATOR".equals(role)) {
-
-                        startActivity(new Intent(
-                                SplashActivity.this,
-                                HomeCreatorActivity.class
-                        ));
-
-                    }
-                    else if ("SHIPPER".equals(role)) {
-
-                        startActivity(new Intent(
-                                SplashActivity.this,
-                                HomeShipperActivity.class
-                        ));
-
-                    }
-                    else {
-
-                        mAuth.signOut();
-
-                        startActivity(new Intent(
-                                SplashActivity.this,
-                                LoginActivity.class
-                        ));
-
-                    }
-
-                    finish();
-
-                })
-
-                .addOnFailureListener(e -> {
-
-                    Toast.makeText(
-                            this,
-                            e.getMessage(),
-                            Toast.LENGTH_SHORT
-                    ).show();
-
-                    startActivity(new Intent(
-                            SplashActivity.this,
-                            LoginActivity.class
-                    ));
-
-                    finish();
-
-                });
-
+    private void navigateToLogin() {
+        startActivity(new Intent(this, LoginActivity.class));
+        finish();
     }
-
 }
