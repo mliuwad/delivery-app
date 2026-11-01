@@ -1,70 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/main"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="@color/background">
-
-    <!-- Tabs trạng thái -->
-    <com.google.android.material.tabs.TabLayout
-        android:id="@+id/tabLayout"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@color/white"
-        app:tabGravity="center"
-        app:tabIndicatorColor="@color/primary"
-        app:tabMode="scrollable"
-        app:tabSelectedTextColor="@color/primary"
-        app:tabTextColor="@color/black">
-
-        <com.google.android.material.tabs.TabItem android:text="Tất cả" />
-        <com.google.android.material.tabs.TabItem android:text="Chờ giao" />
-        <com.google.android.material.tabs.TabItem android:text="Đang giao" />
-        <com.google.android.material.tabs.TabItem android:text="Hoàn thành" />
-        <com.google.android.material.tabs.TabItem android:text="Đã hủy" />
-
-    </com.google.android.material.tabs.TabLayout>
-
-    <!-- SearchView -->
-    <androidx.cardview.widget.CardView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="12dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="8dp"
-        app:cardBackgroundColor="@color/white"
-        app:cardCornerRadius="16dp"
-        app:cardElevation="1dp">
-        <androidx.appcompat.widget.SearchView
-            android:id="@+id/searchView"
-            style="@style/SearchViewStyle"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:background="@android:color/transparent"
-            app:iconifiedByDefault="false"
-            app:queryHint="Tìm kiếm đơn hàng..." />
-    </androidx.cardview.widget.CardView>
-
-    <!-- Danh sách đơn hàng -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvOrder"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:padding="8dp" />
-
-    <!-- Tổng số đơn -->
-    <TextView
-        android:id="@+id/txtTotalOrder"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:padding="16dp"
-        android:text="Tổng số: 0 đơn hàng"
-        android:textColor="@color/black"
-        android:textSize="16sp"
-        android:textStyle="bold" />
-
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
+ android:id="@+id/main" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:background="@color/background">
+ <com.google.android.material.tabs.TabLayout android:id="@+id/tabLayout" android:layout_width="match_parent" android:layout_height="wrap_content" android:background="@color/white" app:tabGravity="center" app:tabIndicatorColor="@color/primary" app:tabMode="scrollable" app:tabSelectedTextColor="@color/primary" app:tabTextColor="@color/gray">
+  <com.google.android.material.tabs.TabItem android:text="Tất cả" />
+  <com.google.android.material.tabs.TabItem android:text="Chờ giao" />
+  <com.google.android.material.tabs.TabItem android:text="Đang giao" />
+  <com.google.android.material.tabs.TabItem android:text="Hoàn thành" />
+  <com.google.android.material.tabs.TabItem android:text="Đã hủy" />
+ </com.google.android.material.tabs.TabLayout>
+ <androidx.cardview.widget.CardView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_margin="16dp" app:cardBackgroundColor="@color/white" app:cardCornerRadius="24dp" app:cardElevation="2dp">
+  <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:padding="4dp">
+   <ImageView android:layout_width="24dp" android:layout_height="24dp" android:layout_gravity="center_vertical" android:layout_marginStart="12dp" android:src="@drawable/ic_search" android:tint="@color/gray" />
+   <EditText android:id="@+id/etSearchShipperOrders" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="12dp" android:layout_weight="1" android:background="@android:color/transparent" android:hint="Tìm kiếm đơn hàng..." android:inputType="text" android:padding="12dp" android:textColor="@color/black" android:textColorHint="@color/gray" android:textSize="16sp" />
+  </LinearLayout>
+ </androidx.cardview.widget.CardView>
+ <androidx.recyclerview.widget.RecyclerView android:id="@+id/rvOrder" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:padding="8dp" />
+ <TextView android:id="@+id/txtTotalOrder" android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="16dp" android:text="Tổng số: 0 đơn hàng" android:textColor="@color/gray" android:textSize="14sp" android:textStyle="bold" />
 </LinearLayout>
