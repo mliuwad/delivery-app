@@ -45,7 +45,7 @@ public class ProductManagementActivity extends AppCompatActivity
     private ProductAdapter productAdapter;
     private ProductViewModel productViewModel;
 
-    private String currentKeyword = "";
+    private String currentKeyword = "";\n    private String currentUserId;\n    private boolean isAdmin;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -78,7 +78,22 @@ public class ProductManagementActivity extends AppCompatActivity
         setupSearch();
         observeViewModel();
 
-        productViewModel.loadProducts();
+        loadCurrentUserAndProducts();
+    }
+
+    private void loadCurrentUserAndProducts() {
+        currentUserId = com.google.firebase.auth.FirebaseAuth.getInstance().getUid();
+        if (currentUserId == null) { finish(); return; }
+        com.google.firebase.firestore.FirebaseFirestore.getInstance().collection("USERS").document(currentUserId).get()
+                .addOnSuccessListener(user -> {
+                    String role = user.getString("role");
+                    isAdmin = "ADMIN".equalsIgnoreCase(role);
+                    if (!isAdmin && !"CREATOR".equalsIgnoreCase(role)) {
+                        Toast.makeText(this, "Tài khoản không có quyền quản lý sản phẩm", Toast.LENGTH_SHORT).show(); finish(); return;
+                    }
+                    productViewModel.loadProducts(currentUserId, isAdmin);
+                })
+                .addOnFailureListener(e -> Toast.makeText(this, "Không thể xác định quyền tài khoản", Toast.LENGTH_SHORT).show());
     }
 
     private void initViews() {
@@ -121,7 +136,7 @@ public class ProductManagementActivity extends AppCompatActivity
         );
 
         swipeRefreshLayout.setOnRefreshListener(
-                () -> productViewModel.loadProducts()
+                () -> loadCurrentUserAndProducts()
         );
     }
 
@@ -198,8 +213,7 @@ public class ProductManagementActivity extends AppCompatActivity
     // ================== SỰ KIỆN TỪ ADAPTER ==================
 
     @Override
-    public void onEditProduct(Product product) {
-        openProductScreen(product, "edit");
+    public void onEditProduct(Product product) {\n        if (isAdmin || product == null || currentUserId == null || !currentUserId.equals(product.getCreatedBy())) { Toast.makeText(this, "Bạn không có quyền sửa sản phẩm này", Toast.LENGTH_SHORT).show(); return; }\n        openProductScreen(product, "edit");
     }
 
     @Override
@@ -208,8 +222,7 @@ public class ProductManagementActivity extends AppCompatActivity
     }
 
     @Override
-    public void onDeactivateProduct(Product product) {
-        productViewModel.deactivateProduct(
+    public void onDeactivateProduct(Product product) {\n        if (isAdmin || product == null || currentUserId == null || !currentUserId.equals(product.getCreatedBy())) { Toast.makeText(this, "Bạn không có quyền ngừng kinh doanh sản phẩm này", Toast.LENGTH_SHORT).show(); return; }\n        productViewModel.deactivateProduct(
                 product.getProductId()
         );
     }
@@ -238,7 +251,7 @@ public class ProductManagementActivity extends AppCompatActivity
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        if (item.getItemId() == R.id.action_add) {
+        if (item.getItemId() == R.id.action_add) {\n            if (isAdmin) { Toast.makeText(this, "Admin không tạo sản phẩm thay cho shop", Toast.LENGTH_SHORT).show(); return true; }
             Intent intent = new Intent(
                     this,
                     AddEditProductActivity.class
@@ -262,8 +275,6 @@ public class ProductManagementActivity extends AppCompatActivity
     protected void onResume() {
         super.onResume();
 
-        if (productViewModel != null) {
-            productViewModel.loadProducts();
-        }
+        if (productViewModel != null) {\n            loadCurrentUserAndProducts();\n        }
     }
 }
