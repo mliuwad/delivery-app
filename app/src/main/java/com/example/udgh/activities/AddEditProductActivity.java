@@ -62,6 +62,8 @@ public class AddEditProductActivity extends AppCompatActivity {
     private String currentMode = "add";
 
     private ProgressDialog progressDialog;
+    private boolean creatorPermissionGranted = false;
+    private boolean productPermissionCheckStarted = false;
 
 
 
@@ -213,11 +215,29 @@ public class AddEditProductActivity extends AppCompatActivity {
             currentMode = "add";
             toolbar.setTitle("Thêm sản phẩm");
             btnSave.setText("Lưu thông tin");
+            btnSave.setEnabled(false);
             setFieldsReadOnly(false);
+            verifyCreatorForAdd();
         }
 
 
 
+    }
+
+    private void verifyCreatorForAdd() {
+        String uid = FirebaseAuth.getInstance().getUid();
+        if (uid == null) { finish(); return; }
+        com.google.firebase.firestore.FirebaseFirestore.getInstance().collection("USERS").document(uid).get()
+                .addOnSuccessListener(user -> {
+                    if (!user.exists() || !"CREATOR".equalsIgnoreCase(user.getString("role"))) {
+                        Toast.makeText(this, "Chỉ Creator mới được thêm sản phẩm", Toast.LENGTH_LONG).show();
+                        finish();
+                        return;
+                    }
+                    creatorPermissionGranted = true;
+                    btnSave.setEnabled(true);
+                })
+                .addOnFailureListener(e -> { Toast.makeText(this, "Không thể xác minh quyền tài khoản", Toast.LENGTH_LONG).show(); finish(); });
     }
 
     private void loadProductData(Product product) {
@@ -279,6 +299,7 @@ public class AddEditProductActivity extends AppCompatActivity {
     // THÊM SẢN PHẨM
 
     private void addProduct() {
+        if (!creatorPermissionGranted) { Toast.makeText(this, "Tài khoản chưa được cấp quyền Creator", Toast.LENGTH_SHORT).show(); return; }
         if (!validateInput()) {
             return;
         }
@@ -307,6 +328,7 @@ public class AddEditProductActivity extends AppCompatActivity {
     //CẬP NHẬT SẢN PHẨM
 
     private void updateProduct() {
+        if (!creatorPermissionGranted) { Toast.makeText(this, "Bạn không có quyền sửa sản phẩm", Toast.LENGTH_SHORT).show(); return; }
         if (!validateInput()) {
             return;
         }
@@ -483,8 +505,9 @@ public class AddEditProductActivity extends AppCompatActivity {
             }
         });
         productViewModel.getSelectedProduct().observe(this, product -> {
-            if (product != null) {
-                loadProductData(product);
+            if (product != null && !productPermissionCheckStarted) {
+                productPermissionCheckStarted = true;
+                verifyPermissionForExistingProduct(product);
             }
         });
 
@@ -503,6 +526,31 @@ public class AddEditProductActivity extends AppCompatActivity {
                 finish();
             }
         });
+    }
+
+    private void verifyPermissionForExistingProduct(Product product) {
+        String uid = FirebaseAuth.getInstance().getUid();
+        if (uid == null) { finish(); return; }
+        com.google.firebase.firestore.FirebaseFirestore.getInstance().collection("USERS").document(uid).get()
+                .addOnSuccessListener(user -> {
+                    String role = user.getString("role");
+                    boolean isAdmin = "ADMIN".equalsIgnoreCase(role);
+                    boolean isOwner = "CREATOR".equalsIgnoreCase(role) && uid.equals(product.getCreatedBy());
+                    boolean isAllowed = isOwner || (isAdmin && "view".equals(currentMode));
+                    if (!isAllowed) {
+                        Toast.makeText(this, "Bạn không có quyền truy cập sản phẩm này", Toast.LENGTH_LONG).show();
+                        finish();
+                        return;
+                    }
+                    creatorPermissionGranted = isOwner;
+                    if (isAdmin) {
+                        btnSave.setVisibility(View.GONE);
+                        btnChooseImage.setVisibility(View.GONE);
+                        setFieldsReadOnly(true);
+                    }
+                    loadProductData(product);
+                })
+                .addOnFailureListener(e -> { Toast.makeText(this, "Không thể xác minh quyền truy cập", Toast.LENGTH_LONG).show(); finish(); });
     }
 
     private void showProgressDialog() {
