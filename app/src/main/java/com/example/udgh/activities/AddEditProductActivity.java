@@ -225,19 +225,7 @@ public class AddEditProductActivity extends AppCompatActivity {
     }
 
     private void verifyCreatorForAdd() {
-        String uid = FirebaseAuth.getInstance().getUid();
-        if (uid == null) { finish(); return; }
-        com.google.firebase.firestore.FirebaseFirestore.getInstance().collection("USERS").document(uid).get()
-                .addOnSuccessListener(user -> {
-                    if (!user.exists() || !"CREATOR".equalsIgnoreCase(user.getString("role"))) {
-                        Toast.makeText(this, "Chỉ Creator mới được thêm sản phẩm", Toast.LENGTH_LONG).show();
-                        finish();
-                        return;
-                    }
-                    creatorPermissionGranted = true;
-                    btnSave.setEnabled(true);
-                })
-                .addOnFailureListener(e -> { Toast.makeText(this, "Không thể xác minh quyền tài khoản", Toast.LENGTH_LONG).show(); finish(); });
+        productViewModel.verifyAddPermission();
     }
 
     private void loadProductData(Product product) {
@@ -511,6 +499,34 @@ public class AddEditProductActivity extends AppCompatActivity {
             }
         });
 
+        productViewModel.getAccessResult().observe(this, access -> {
+            if (access == null) return;
+
+            if (!access.isAllowed()) {
+                Toast.makeText(this, access.getMessage(), Toast.LENGTH_LONG).show();
+                finish();
+                return;
+            }
+
+            creatorPermissionGranted = access.isCreator();
+
+            if (currentMode.equals("add")) {
+                btnSave.setEnabled(true);
+                return;
+            }
+
+            if (access.isAdmin()) {
+                btnSave.setVisibility(View.GONE);
+                btnChooseImage.setVisibility(View.GONE);
+                setFieldsReadOnly(true);
+            }
+
+            Product selected = productViewModel.getSelectedProduct().getValue();
+            if (selected != null) {
+                loadProductData(selected);
+            }
+        });
+
         productViewModel.getOperationResult().observe(this, result -> {
             if (result == null) {
                 return;
@@ -529,28 +545,7 @@ public class AddEditProductActivity extends AppCompatActivity {
     }
 
     private void verifyPermissionForExistingProduct(Product product) {
-        String uid = FirebaseAuth.getInstance().getUid();
-        if (uid == null) { finish(); return; }
-        com.google.firebase.firestore.FirebaseFirestore.getInstance().collection("USERS").document(uid).get()
-                .addOnSuccessListener(user -> {
-                    String role = user.getString("role");
-                    boolean isAdmin = "ADMIN".equalsIgnoreCase(role);
-                    boolean isOwner = "CREATOR".equalsIgnoreCase(role) && uid.equals(product.getCreatedBy());
-                    boolean isAllowed = isOwner || (isAdmin && "view".equals(currentMode));
-                    if (!isAllowed) {
-                        Toast.makeText(this, "Bạn không có quyền truy cập sản phẩm này", Toast.LENGTH_LONG).show();
-                        finish();
-                        return;
-                    }
-                    creatorPermissionGranted = isOwner;
-                    if (isAdmin) {
-                        btnSave.setVisibility(View.GONE);
-                        btnChooseImage.setVisibility(View.GONE);
-                        setFieldsReadOnly(true);
-                    }
-                    loadProductData(product);
-                })
-                .addOnFailureListener(e -> { Toast.makeText(this, "Không thể xác minh quyền truy cập", Toast.LENGTH_LONG).show(); finish(); });
+        productViewModel.verifyProductPermission(product, currentMode);
     }
 
     private void showProgressDialog() {

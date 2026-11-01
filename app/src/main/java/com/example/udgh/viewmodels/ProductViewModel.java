@@ -36,6 +36,117 @@ public class ProductViewModel extends ViewModel {
         imageRepository = new ProductImageRepository();
     }
 
+    private final MutableLiveData<Boolean> adminAccount = new MutableLiveData<>(false);
+    private final MutableLiveData<AccessResult> accessResult = new MutableLiveData<>();
+
+    public LiveData<Boolean> getAdminAccount() {
+        return adminAccount;
+    }
+
+    public LiveData<AccessResult> getAccessResult() {
+        return accessResult;
+    }
+
+    /**
+     * Xác định role và tải danh sách sản phẩm theo quyền.
+     * Activity không cần tự đọc USERS trên Firestore.
+     */
+    public void loadProductsForCurrentUser() {
+        isLoading.setValue(true);
+        productRepository.getCurrentUserRole(new ProductRepository.ResultCallback<String>() {
+            @Override
+            public void onSuccess(String role) {
+                boolean isAdmin = "ADMIN".equalsIgnoreCase(role);
+                boolean isCreator = "CREATOR".equalsIgnoreCase(role);
+
+                if (!isAdmin && !isCreator) {
+                    isLoading.postValue(false);
+                    operationResult.postValue(new OperationResult(
+                            false, "Tài khoản không có quyền quản lý sản phẩm"));
+                    return;
+                }
+
+                adminAccount.postValue(isAdmin);
+                loadProducts(productRepository.getCurrentUserUid(), isAdmin);
+            }
+
+            @Override
+            public void onError(Exception e) {
+                isLoading.postValue(false);
+                operationResult.postValue(new OperationResult(
+                        false, "Không thể xác định quyền tài khoản: " + e.getMessage()));
+            }
+        });
+    }
+
+    public void verifyAddPermission() {
+        productRepository.getCurrentUserRole(new ProductRepository.ResultCallback<String>() {
+            @Override
+            public void onSuccess(String role) {
+                boolean allowed = "CREATOR".equalsIgnoreCase(role);
+                accessResult.postValue(new AccessResult(
+                        allowed, allowed, false,
+                        allowed ? "" : "Chỉ Creator mới được thêm sản phẩm"));
+            }
+
+            @Override
+            public void onError(Exception e) {
+                accessResult.postValue(new AccessResult(
+                        false, false, false,
+                        "Không thể xác minh quyền tài khoản: " + e.getMessage()));
+            }
+        });
+    }
+
+    public void verifyProductPermission(Product product, String mode) {
+        if (product == null) {
+            accessResult.postValue(new AccessResult(
+                    false, false, false, "Không tìm thấy sản phẩm"));
+            return;
+        }
+
+        productRepository.getCurrentUserRole(new ProductRepository.ResultCallback<String>() {
+            @Override
+            public void onSuccess(String role) {
+                String uid = productRepository.getCurrentUserUid();
+                boolean isAdmin = "ADMIN".equalsIgnoreCase(role);
+                boolean isCreator = "CREATOR".equalsIgnoreCase(role);
+                boolean isOwner = isCreator && uid != null && uid.equals(product.getCreatedBy());
+                boolean allowed = isOwner || (isAdmin && "view".equals(mode));
+
+                accessResult.postValue(new AccessResult(
+                        allowed, isOwner, isAdmin,
+                        allowed ? "" : "Bạn không có quyền truy cập sản phẩm này"));
+            }
+
+            @Override
+            public void onError(Exception e) {
+                accessResult.postValue(new AccessResult(
+                        false, false, false,
+                        "Không thể xác minh quyền truy cập: " + e.getMessage()));
+            }
+        });
+    }
+
+    public static class AccessResult {
+        private final boolean allowed;
+        private final boolean creator;
+        private final boolean admin;
+        private final String message;
+
+        public AccessResult(boolean allowed, boolean creator, boolean admin, String message) {
+            this.allowed = allowed;
+            this.creator = creator;
+            this.admin = admin;
+            this.message = message;
+        }
+
+        public boolean isAllowed() { return allowed; }
+        public boolean isCreator() { return creator; }
+        public boolean isAdmin() { return admin; }
+        public String getMessage() { return message; }
+    }
+
     public LiveData<List<Product>> getProducts() {
         return products;
     }

@@ -24,6 +24,39 @@ public class ProductRepository {
         void onError(Exception e);
     }
 
+    /**
+     * Lấy role của tài khoản đang đăng nhập.
+     * Repository chịu trách nhiệm giao tiếp với Firebase Auth/Firestore.
+     */
+    public void getCurrentUserRole(ResultCallback<String> callback) {
+        String uid = com.google.firebase.auth.FirebaseAuth.getInstance().getUid();
+        if (uid == null || uid.trim().isEmpty()) {
+            callback.onError(new SecurityException("Vui lòng đăng nhập"));
+            return;
+        }
+
+        db.collection("USERS").document(uid).get()
+                .addOnSuccessListener(document -> {
+                    if (!document.exists()) {
+                        callback.onError(new SecurityException("Không tìm thấy thông tin tài khoản"));
+                        return;
+                    }
+
+                    String role = document.getString("role");
+                    if (role == null || role.trim().isEmpty()) {
+                        callback.onError(new SecurityException("Tài khoản chưa được phân quyền"));
+                        return;
+                    }
+
+                    callback.onSuccess(role);
+                })
+                .addOnFailureListener(callback::onError);
+    }
+
+    public String getCurrentUserUid() {
+        return com.google.firebase.auth.FirebaseAuth.getInstance().getUid();
+    }
+
     // TẢI DANH SÁCH SẢN PHẨM
     public void getProducts(String ownerUid, boolean isAdmin, ResultCallback<List<Product>> callback) {
         com.google.firebase.firestore.Query query = db.collection(COLLECTION);

@@ -84,19 +84,11 @@ public class ProductManagementActivity extends AppCompatActivity
 
     private void loadCurrentUserAndProducts() {
         currentUserId = com.google.firebase.auth.FirebaseAuth.getInstance().getUid();
-        if (currentUserId == null) { finish(); return; }
-        com.google.firebase.firestore.FirebaseFirestore.getInstance().collection("USERS").document(currentUserId).get()
-                .addOnSuccessListener(user -> {
-                    String role = user.getString("role");
-                    isAdmin = "ADMIN".equalsIgnoreCase(role);
-                    if (!isAdmin && !"CREATOR".equalsIgnoreCase(role)) {
-                        Toast.makeText(this, "Tài khoản không có quyền quản lý sản phẩm", Toast.LENGTH_SHORT).show(); finish(); return;
-                    }
-                    productAdapter.setAdminViewOnly(isAdmin);
-                    invalidateOptionsMenu();
-                    productViewModel.loadProducts(currentUserId, isAdmin);
-                })
-                .addOnFailureListener(e -> Toast.makeText(this, "Không thể xác định quyền tài khoản", Toast.LENGTH_SHORT).show());
+        if (currentUserId == null) {
+            finish();
+            return;
+        }
+        productViewModel.loadProductsForCurrentUser();
     }
 
     private void initViews() {
@@ -176,6 +168,12 @@ public class ProductManagementActivity extends AppCompatActivity
     }
 
     private void observeViewModel() {
+
+        productViewModel.getAdminAccount().observe(this, admin -> {
+            isAdmin = admin != null && admin;
+            productAdapter.setAdminViewOnly(isAdmin);
+            invalidateOptionsMenu();
+        });
 
         productViewModel.getProducts().observe(this, products -> {
             productAdapter.setProducts(products);
