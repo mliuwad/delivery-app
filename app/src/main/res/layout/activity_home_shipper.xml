@@ -34,6 +34,7 @@
         android:background="@color/white"
         android:elevation="4dp"
         app:itemBackground="@android:color/transparent"
+        app:itemRippleColor="@android:color/transparent"
         app:itemIconTint="@color/shipper_nav_tint"
         app:itemTextColor="@color/shipper_nav_tint"
         app:labelVisibilityMode="labeled"
