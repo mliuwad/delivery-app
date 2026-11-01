@@ -17,11 +17,6 @@
         app:tabMode="scrollable"
         app:tabSelectedTextColor="@color/primary"
         app:tabTextColor="@color/black">
-        <com.google.android.material.tabs.TabItem android:text="Tất cả" />
-        <com.google.android.material.tabs.TabItem android:text="Chờ giao" />
-        <com.google.android.material.tabs.TabItem android:text="Đang giao" />
-        <com.google.android.material.tabs.TabItem android:text="Hoàn thành" />
-        <com.google.android.material.tabs.TabItem android:text="Đã hủy" />
     </com.google.android.material.tabs.TabLayout>
 
     <androidx.appcompat.widget.SearchView
