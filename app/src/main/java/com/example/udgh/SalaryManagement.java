@@ -91,11 +91,11 @@ public class SalaryManagement extends AppCompatActivity {
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         toolbar.setNavigationOnClickListener(v -> finish());
 
-        setupMonthSpinner();
-
         viewModel = new ViewModelProvider(this).get(SalaryManagementViewModel.class);
         salaryList = new ArrayList<>();
         salaryListFull = new ArrayList<>();
+
+        setupMonthSpinner();
         adapter = new SalaryAdapter(salaryList);
         observeViewModel();
         rvSalary.setLayoutManager(new LinearLayoutManager(this));
