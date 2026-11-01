@@ -21,15 +21,16 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 import com.bumptech.glide.Glide;
 import com.example.udgh.models.ShipperDetail;
 import com.example.udgh.models.User;
+import com.example.udgh.viewmodels.ShipperProfileViewModel;
+import com.example.udgh.repositories.ShipperProfileRepository;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.FirebaseFirestore;
 
 import org.json.JSONObject;
 
@@ -54,8 +55,8 @@ public class ProfileShipperFragment extends Fragment {
     private TextInputEditText edtFullName, edtPhone, edtEmail, edtCitizenId, edtLicensePlate, edtAddress;
     private MaterialButton btnEdit;
 
-    private FirebaseFirestore db;
     private FirebaseAuth mAuth;
+    private ShipperProfileViewModel profileViewModel;
     private String userId;
     private String shipperDetailId;
     private Uri selectedImageUri;
@@ -84,8 +85,8 @@ public class ProfileShipperFragment extends Fragment {
                              @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_shipper_information, container, false);
 
-        db = FirebaseFirestore.getInstance();
         mAuth = FirebaseAuth.getInstance();
+        profileViewModel = new ViewModelProvider(this).get(ShipperProfileViewModel.class);
 
         SharedPreferences sharedPref = requireActivity().getSharedPreferences("MyAppPrefs", android.content.Context.MODE_PRIVATE);
         userId = sharedPref.getString("userId", "");
@@ -105,6 +106,7 @@ public class ProfileShipperFragment extends Fragment {
         btnEdit = view.findViewById(R.id.btnEdit);
 
         setEditMode(false);
+        observeProfileViewModel();
 
         imgAvatar.setOnClickListener(v -> openGallery());
 
@@ -211,17 +213,9 @@ public class ProfileShipperFragment extends Fragment {
     }
 
     private void saveAvatarUrlToFirestore(String url) {
-        Map<String, Object> update = new HashMap<>();
-        update.put("avatarUrl", url);
-        db.collection("USERS")
-                .document(userId)
-                .update(update)
-                .addOnSuccessListener(aVoid ->
-                        Toast.makeText(getContext(), "Đã cập nhật ảnh đại diện", Toast.LENGTH_SHORT).show()
-                )
-                .addOnFailureListener(e ->
-                        Toast.makeText(getContext(), "Lỗi lưu ảnh: " + e.getMessage(), Toast.LENGTH_SHORT).show()
-                );
+        if (profileViewModel != null) {
+            profileViewModel.updateAvatar(userId, url);
+        }
     }
 
     private void loadProfile() {
@@ -229,61 +223,43 @@ public class ProfileShipperFragment extends Fragment {
             Toast.makeText(getContext(), "Chưa đăng nhập", Toast.LENGTH_SHORT).show();
             return;
         }
+        if (profileViewModel != null) profileViewModel.loadProfile(userId);
+    }
 
-        db.collection("USERS")
-                .document(userId)
-                .get()
-                .addOnSuccessListener(documentSnapshot -> {
-                    if (documentSnapshot.exists()) {
-                        currentUser = documentSnapshot.toObject(User.class);
-                        currentUser.setUserId(documentSnapshot.getId());
-                        displayUserInfo();
+    private void observeProfileViewModel() {
+        profileViewModel.getProfile().observe(getViewLifecycleOwner(), data -> {
+            if (data == null) return;
+            currentUser = data.user;
+            currentShipperDetail = data.shipperDetail;
+            shipperDetailId = data.shipperDetailId;
+            displayUserInfo();
+            displayShipperDetailInfo();
 
-                        // ✅ Sửa lỗi Glide: kiểm tra isAdded() và getContext()
-                        String avatarUrl = documentSnapshot.getString("avatarUrl");
-                        if (!TextUtils.isEmpty(avatarUrl) && isAdded() && getContext() != null) {
-                            Glide.with(this)
-                                    .load(avatarUrl)
-                                    .circleCrop()
-                                    .into(imgAvatar);
-                        }
-                    }
-                })
-                .addOnFailureListener(e ->
-                        Toast.makeText(getContext(), "Lỗi tải user: " + e.getMessage(), Toast.LENGTH_SHORT).show()
-                );
+            String avatarUrl = currentUser != null ? currentUser.getAvatarUrl() : null;
+            if (!TextUtils.isEmpty(avatarUrl) && isAdded() && getContext() != null) {
+                Glide.with(this).load(avatarUrl).circleCrop().into(imgAvatar);
+            }
+        });
 
-        db.collection("USERS")
-                .document(userId)
-                .collection("SHIPPER_DETAILS")
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    if (!queryDocumentSnapshots.isEmpty()) {
-                        DocumentSnapshot doc = queryDocumentSnapshots.getDocuments().get(0);
-                        shipperDetailId = doc.getId();
-                        currentShipperDetail = doc.toObject(ShipperDetail.class);
-                        displayShipperDetailInfo();
-                    } else {
-                        shipperDetailId = userId;
-                        currentShipperDetail = new ShipperDetail();
-                        currentShipperDetail.setShipperId(userId);
-                        Map<String, Object> data = new HashMap<>();
-                        data.put("shipperId", userId);
-                        db.collection("USERS")
-                                .document(userId)
-                                .collection("SHIPPER_DETAILS")
-                                .document(shipperDetailId)
-                                .set(data)
-                                .addOnSuccessListener(aVoid -> {})
-                                .addOnFailureListener(e ->
-                                        Toast.makeText(getContext(), "Lỗi tạo detail: " + e.getMessage(), Toast.LENGTH_SHORT).show()
-                                );
-                        displayShipperDetailInfo();
-                    }
-                })
-                .addOnFailureListener(e ->
-                        Toast.makeText(getContext(), "Lỗi tải chi tiết: " + e.getMessage(), Toast.LENGTH_SHORT).show()
-                );
+        profileViewModel.getOperationMessage().observe(getViewLifecycleOwner(), message -> {
+            if (!TextUtils.isEmpty(message) && isAdded()) {
+                Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        profileViewModel.getOperationSuccess().observe(getViewLifecycleOwner(), success -> {
+            if (success == null) return;
+            if (btnEdit != null && isAdded()) {
+                btnEdit.setEnabled(true);
+                if (success && isEditing) {
+                    isEditing = false;
+                    btnEdit.setText("Cập nhật thông tin");
+                    setEditMode(false);
+                } else if (!success && isEditing) {
+                    btnEdit.setText("LƯU");
+                }
+            }
+        });
     }
 
     private void displayUserInfo() {
@@ -339,59 +315,15 @@ public class ProfileShipperFragment extends Fragment {
             edtEmail.requestFocus();
             return;
         }
+        if (TextUtils.isEmpty(shipperDetailId)) {
+            Toast.makeText(getContext(), "Chưa tải được thông tin chi tiết Shipper", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
         btnEdit.setEnabled(false);
         btnEdit.setText("Đang lưu...");
-
-        Map<String, Object> userUpdates = new HashMap<>();
-        userUpdates.put("fullName", fullName);
-        userUpdates.put("phone", phone);
-        userUpdates.put("email", email);
-
-        db.collection("USERS")
-                .document(userId)
-                .update(userUpdates)
-                .addOnSuccessListener(aVoid -> {
-                    Map<String, Object> detailUpdates = new HashMap<>();
-                    detailUpdates.put("citizenId", citizenId);
-                    detailUpdates.put("licensePlate", licensePlate);
-                    detailUpdates.put("address", address);
-
-                    db.collection("USERS")
-                            .document(userId)
-                            .collection("SHIPPER_DETAILS")
-                            .document(shipperDetailId)
-                            .set(detailUpdates, com.google.firebase.firestore.SetOptions.merge())
-                            .addOnSuccessListener(aVoid2 -> {
-                                Toast.makeText(getContext(), "Cập nhật thành công!", Toast.LENGTH_SHORT).show();
-                                if (currentUser != null) {
-                                    currentUser.setFullName(fullName);
-                                    currentUser.setPhone(phone);
-                                    currentUser.setEmail(email);
-                                    displayUserInfo();
-                                }
-                                if (currentShipperDetail != null) {
-                                    currentShipperDetail.setCitizenId(citizenId);
-                                    currentShipperDetail.setLicensePlate(licensePlate);
-                                    currentShipperDetail.setAddress(address);
-                                    displayShipperDetailInfo();
-                                }
-                                isEditing = false;
-                                btnEdit.setText("Cập nhật thông tin");
-                                setEditMode(false);
-                                btnEdit.setEnabled(true);
-                            })
-                            .addOnFailureListener(e -> {
-                                Toast.makeText(getContext(), "Lỗi cập nhật chi tiết: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                                btnEdit.setEnabled(true);
-                                btnEdit.setText("LƯU");
-                            });
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(getContext(), "Lỗi cập nhật thông tin: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    btnEdit.setEnabled(true);
-                    btnEdit.setText("LƯU");
-                });
+        profileViewModel.saveProfile(userId, shipperDetailId, fullName, phone, email,
+                citizenId, licensePlate, address);
     }
 
     private void setEditMode(boolean editing) {
