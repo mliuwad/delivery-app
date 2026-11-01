@@ -252,6 +252,30 @@ public class OrderRepository {
                 .addOnFailureListener(callback::onError);
     }
 
+    public void getOrdersByCreator(String creatorId, ResultCallback<List<Order>> callback) {
+        if (creatorId == null || creatorId.trim().isEmpty()) {
+            callback.onError(new IllegalArgumentException("Không xác định được tài khoản Creator"));
+            return;
+        }
+
+        db.collection(COLLECTION).whereEqualTo("creatorId", creatorId).get()
+                .addOnSuccessListener(snapshot -> {
+                    List<Order> orders = new ArrayList<>();
+                    for (QueryDocumentSnapshot doc : snapshot) {
+                        Order order = doc.toObject(Order.class);
+                        order.setOrderId(doc.getId());
+                        orders.add(order);
+                    }
+                    sortOrders(orders);
+                    if (orders.isEmpty()) {
+                        callback.onSuccess(orders);
+                    } else {
+                        loadOrderDetails(orders, callback);
+                    }
+                })
+                .addOnFailureListener(callback::onError);
+    }
+
     // Lấy danh sách đơn hàng theo trạng thái
     public void getOrders(String status, ResultCallback<List<Order>> callback) {
 
