@@ -1,0 +1,87 @@
+package com.example.udgh;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.Fragment;
+
+import com.google.android.material.appbar.MaterialToolbar;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.firebase.auth.FirebaseAuth;
+
+public class HomeCreatorActivity extends AppCompatActivity {
+    private MaterialToolbar toolbar;
+    private BottomNavigationView bottomNavigation;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_home_creator);
+
+        toolbar = findViewById(R.id.toolbar);
+        bottomNavigation = findViewById(R.id.bottomNavigation);
+        setSupportActionBar(toolbar);
+
+        if (savedInstanceState == null) {
+            bottomNavigation.setSelectedItemId(R.id.nav_creator_home);
+            showFragment(new CreatorHomeFragment(), "Trang chủ");
+        }
+
+        bottomNavigation.setOnItemSelectedListener(item -> {
+            Fragment fragment;
+            String title;
+            int id = item.getItemId();
+
+            if (id == R.id.nav_creator_home) {
+                fragment = new CreatorHomeFragment();
+                title = "Tổng quan";
+            } else if (id == R.id.nav_creator_orders) {
+                fragment = new CreatorOrderFragment();
+                title = "Đơn hàng";
+            } else if (id == R.id.nav_creator_products) {
+                fragment = new CreatorProductFragment();
+                title = "Sản phẩm";
+            } else {
+                return false;
+            }
+
+            showFragment(fragment, title);
+            return true;
+        });
+    }
+
+    private void showFragment(Fragment fragment, String title) {
+        toolbar.setTitle(title);
+        getSupportFragmentManager().beginTransaction()
+                .replace(R.id.container, fragment)
+                .commit();
+    }
+
+    public void openOrdersTab() {
+        bottomNavigation.setSelectedItemId(R.id.nav_creator_orders);
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.creator_home_toolbar_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        if (item.getItemId() == R.id.menu_logout) {
+            FirebaseAuth.getInstance().signOut();
+            getSharedPreferences("MyAppPrefs", MODE_PRIVATE).edit().clear().apply();
+            Toast.makeText(this, "Đã đăng xuất", Toast.LENGTH_SHORT).show();
+            startActivity(new Intent(this, LoginActivity.class));
+            finish();
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+}
