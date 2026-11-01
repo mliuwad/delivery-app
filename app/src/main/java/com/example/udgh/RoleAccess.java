@@ -5,67 +5,46 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.FirebaseFirestore;
+import com.example.udgh.repositories.SessionRepository;
 
 /**
- * Xác thực phiên đăng nhập, trạng thái tài khoản và vai trò trước khi
- * khởi tạo màn hình dành riêng cho từng nhóm người dùng.
+ * Kiểm tra phiên đăng nhập và vai trò trước khi khởi tạo màn hình.
+ * Việc đọc USERS và xác thực trạng thái được giao cho SessionRepository.
  */
 public final class RoleAccess {
-
     private RoleAccess() {}
 
-    public static void requireRole(
-            AppCompatActivity activity,
-            String requiredRole,
-            Runnable onAuthorized
-    ) {
-        FirebaseAuth auth = FirebaseAuth.getInstance();
-        FirebaseUser currentUser = auth.getCurrentUser();
+    public static void requireRole(AppCompatActivity activity,
+                                   String requiredRole,
+                                   Runnable onAuthorized) {
+        new SessionRepository().validateCurrentSession(new SessionRepository.Callback() {
+            @Override
+            public void onSuccess(String actualRole) {
+                if (activity.isFinishing() || activity.isDestroyed()) return;
 
-        if (currentUser == null) {
-            redirectToLogin(activity);
-            return;
-        }
+                if (actualRole == null) {
+                    Toast.makeText(activity, "Vui lòng đăng nhập lại", Toast.LENGTH_LONG).show();
+                    redirectToLogin(activity);
+                    return;
+                }
 
-        FirebaseFirestore.getInstance()
-                .collection("USERS")
-                .document(currentUser.getUid())
-                .get()
-                .addOnSuccessListener(document -> {
-                    if (activity.isFinishing() || activity.isDestroyed()) return;
-
-                    String actualRole = document.getString("role");
-                    String status = document.getString("status");
-
-                    if (!document.exists() || !"ACTIVE".equalsIgnoreCase(status)) {
-                        auth.signOut();
-                        Toast.makeText(activity,
-                                "Tài khoản không tồn tại hoặc đã bị khóa",
-                                Toast.LENGTH_LONG).show();
-                        redirectToLogin(activity);
-                        return;
-                    }
-
-                    if (actualRole == null || !requiredRole.equalsIgnoreCase(actualRole)) {
-                        Toast.makeText(activity,
-                                "Bạn không có quyền truy cập màn hình này",
-                                Toast.LENGTH_LONG).show();
-                        redirectToRoleHome(activity, actualRole);
-                        return;
-                    }
-
-                    onAuthorized.run();
-                })
-                .addOnFailureListener(error -> {
-                    if (activity.isFinishing() || activity.isDestroyed()) return;
-                    Toast.makeText(activity,
-                            "Không thể xác minh quyền truy cập. Vui lòng kiểm tra kết nối và thử lại.",
+                if (!requiredRole.equalsIgnoreCase(actualRole)) {
+                    Toast.makeText(activity, "Bạn không có quyền truy cập màn hình này",
                             Toast.LENGTH_LONG).show();
-                    activity.finish();
-                });
+                    redirectToRoleHome(activity, actualRole);
+                    return;
+                }
+
+                onAuthorized.run();
+            }
+
+            @Override
+            public void onError(String message) {
+                if (activity.isFinishing() || activity.isDestroyed()) return;
+                Toast.makeText(activity, message, Toast.LENGTH_LONG).show();
+                activity.finish();
+            }
+        });
     }
 
     private static void redirectToLogin(AppCompatActivity activity) {
