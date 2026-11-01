@@ -29,7 +29,6 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.bumptech.glide.Glide;
-import com.example.udgh.R;
 import com.example.udgh.models.Product;
 import com.example.udgh.viewmodels.ProductViewModel;
 import com.google.android.material.appbar.MaterialToolbar;
