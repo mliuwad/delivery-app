@@ -14,19 +14,23 @@
         app:menu="@menu/creator_home_toolbar_menu"
         app:title="Tổng quan"
         app:titleTextColor="@color/white"
-        app:titleTextAppearance="@style/ToolbarTitleStyle" />
+        app:titleTextAppearance="@style/ToolbarTitleStyle"
+        app:elevation="2dp" />
     <FrameLayout
         android:id="@+id/container"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1" />
+        android:layout_weight="1"
+        android:background="@color/background" />
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottomNavigation"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/primary"
-        app:itemIconTint="@color/background"
-        app:itemTextColor="@color/background"
+        android:background="@color/white"
+        android:elevation="8dp"
+        app:itemIconTint="@color/creator_nav_tint"
+        app:itemTextColor="@color/creator_nav_tint"
+        app:itemActiveIndicatorColor="@color/mint_primary_light"
         app:labelVisibilityMode="labeled"
         app:menu="@menu/menu_bottom_creator" />
 </LinearLayout>
