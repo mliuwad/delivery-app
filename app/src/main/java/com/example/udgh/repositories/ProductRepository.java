@@ -72,7 +72,8 @@ public class ProductRepository {
     }
 
     public void getProducts(ResultCallback<List<Product>> callback) {
-        getProducts(null, true, callback);
+        String uid = com.google.firebase.auth.FirebaseAuth.getInstance().getUid();
+        getProducts(uid, false, callback);
     }
 
     // THÊM SẢN PHẨM
