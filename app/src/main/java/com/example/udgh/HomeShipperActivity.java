@@ -49,6 +49,11 @@ public class HomeShipperActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_home_shipper);
 
+        RoleAccess.requireRole(this, "SHIPPER", this::initializeShipperScreen);
+    }
+
+    private void initializeShipperScreen() {
+
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
@@ -103,6 +108,7 @@ public class HomeShipperActivity extends AppCompatActivity {
             }
             return false;
         });
+    
     }
 
     // Chuyển sang tab danh sách đơn hàng dành riêng cho Shipper.
