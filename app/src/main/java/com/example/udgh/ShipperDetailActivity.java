@@ -62,8 +62,6 @@ public class ShipperDetailActivity extends AppCompatActivity {
     private Uri selectedImageUri;
     private ProgressDialog progressDialog;
 
-    private static final String IMGBB_API_KEY = "dee690b746c3dc19370022b139ad6696";
-
     // ==================== IMAGE PICKER ====================
     private final ActivityResultLauncher<Intent> imagePickerLauncher =
             registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),
@@ -219,7 +217,7 @@ public class ShipperDetailActivity extends AppCompatActivity {
 
             RequestBody requestBody = new MultipartBody.Builder()
                     .setType(MultipartBody.FORM)
-                    .addFormDataPart("key", IMGBB_API_KEY)
+                    .addFormDataPart("key", BuildConfig.IMGBB_API_KEY)
                     .addFormDataPart("image", base64Image)
                     .build();
 
