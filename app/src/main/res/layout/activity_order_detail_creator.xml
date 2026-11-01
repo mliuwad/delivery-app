@@ -50,32 +50,14 @@
         app:cardBackgroundColor="@color/white"
         app:cardCornerRadius="24dp"
         app:cardElevation="2dp">
-        <LinearLayout
+        <androidx.appcompat.widget.SearchView
+            android:id="@+id/searchView"
+            style="@style/SearchViewStyle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:padding="4dp">
-            <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:layout_gravity="center_vertical"
-                android:layout_marginStart="12dp"
-                android:src="@drawable/ic_search"
-                android:tint="@color/gray" />
-            <EditText
-                android:id="@+id/searchView"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="12dp"
-                android:layout_weight="1"
-                android:background="@android:color/transparent"
-                android:hint="Tìm kiếm đơn hàng..."
-                android:inputType="text"
-                android:padding="12dp"
-                android:textColor="@color/black"
-                android:textColorHint="@color/gray"
-                android:textSize="16sp" />
-        </LinearLayout>
+            android:background="@android:color/transparent"
+            app:iconifiedByDefault="false"
+            app:queryHint="Tìm kiếm đơn hàng..." />
     </androidx.cardview.widget.CardView>
 
     <!-- Danh sách đơn hàng -->
