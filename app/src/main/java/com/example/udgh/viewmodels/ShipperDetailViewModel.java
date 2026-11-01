@@ -39,6 +39,7 @@ public class ShipperDetailViewModel extends ViewModel {
                     @Override public void onSuccess(Void ignored) {
                         operationSuccess.postValue(true);
                         message.postValue("Cập nhật thành công");
+                        load(shipperId);
                     }
                     @Override public void onError(Exception error) {
                         operationSuccess.postValue(false);
