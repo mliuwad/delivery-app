@@ -18,14 +18,22 @@
         app:titleTextAppearance="@style/ToolbarTitleStyle"
         app:titleTextColor="@android:color/white" />
 
-    <!-- SearchView -->
-    <androidx.appcompat.widget.SearchView
-        android:id="@+id/searchView"
+    <!-- Thanh tìm kiếm đồng bộ với trang sản phẩm -->
+    <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="12dp"
-        android:background="@drawable/bg_search"
-        app:queryHint="Tìm kiếm địa chỉ..." />
+        android:layout_margin="16dp"
+        app:cardBackgroundColor="@color/white"
+        app:cardCornerRadius="24dp"
+        app:cardElevation="2dp">
+        <androidx.appcompat.widget.SearchView
+            android:id="@+id/searchView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@android:color/transparent"
+            app:iconifiedByDefault="false"
+            app:queryHint="Tìm kiếm địa chỉ..." />
+    </androidx.cardview.widget.CardView>
 
     <!-- ✅ OpenStreetMap View (thay thế Google Maps) -->
     <org.osmdroid.views.MapView
