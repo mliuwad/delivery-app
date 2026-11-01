@@ -433,7 +433,9 @@ public class OrderRepository {
 
         Query query = db.collection(COLLECTION);
 
-        if (status != null && !"ALL".equals(status)) {
+        if ("PENDING".equals(status)) {
+            query = query.whereIn("status", java.util.Arrays.asList("PENDING", "WAITING"));
+        } else if (status != null && !"ALL".equals(status)) {
             query = query.whereEqualTo("status", status);
         }
 
