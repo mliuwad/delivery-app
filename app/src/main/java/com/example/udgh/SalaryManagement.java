@@ -23,25 +23,22 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.bumptech.glide.Glide;
 import com.example.udgh.models.User;
+import com.example.udgh.repositories.SalaryManagementRepository;
+import com.example.udgh.viewmodels.SalaryManagementViewModel;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.ChipGroup;
-import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 public class SalaryManagement extends AppCompatActivity {
 
@@ -53,17 +50,15 @@ public class SalaryManagement extends AppCompatActivity {
     private RecyclerView rvSalary;
     private SwipeRefreshLayout swipeRefreshLayout;
 
-    private FirebaseFirestore db;
-    private List<SalaryItem> salaryList;
+    private SalaryManagementViewModel viewModel;
+    private List<SalaryManagementRepository.SalaryRow> salaryList;
     private SalaryAdapter adapter;
-    private List<SalaryItem> salaryListFull;
+    private List<SalaryManagementRepository.SalaryRow> salaryListFull;
 
     private int selectedMonth;
     private int selectedYear;
     private String selectedFilter = "ALL";
 
-    // Thêm flag để tránh load đồng thời
-    private boolean isLoading = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -82,7 +77,6 @@ public class SalaryManagement extends AppCompatActivity {
             return insets;
         });
 
-        db = FirebaseFirestore.getInstance();
 
         toolbar = findViewById(R.id.toolbar);
         spMonth = findViewById(R.id.spMonth);
@@ -99,20 +93,16 @@ public class SalaryManagement extends AppCompatActivity {
 
         setupMonthSpinner();
 
+        viewModel = new ViewModelProvider(this).get(SalaryManagementViewModel.class);
         salaryList = new ArrayList<>();
         salaryListFull = new ArrayList<>();
         adapter = new SalaryAdapter(salaryList);
+        observeViewModel();
         rvSalary.setLayoutManager(new LinearLayoutManager(this));
         rvSalary.setAdapter(adapter);
 
         swipeRefreshLayout.setColorSchemeResources(R.color.primary);
-        swipeRefreshLayout.setOnRefreshListener(() -> {
-            if (!isLoading) {
-                loadData();
-            } else {
-                swipeRefreshLayout.setRefreshing(false);
-            }
-        });
+        swipeRefreshLayout.setOnRefreshListener(this::loadData);
 
         edtSearch.addTextChangedListener(new TextWatcher() {
             @Override
@@ -167,9 +157,7 @@ public class SalaryManagement extends AppCompatActivity {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 selectedMonth = position + 1;
-                if (!isLoading) {
-                    loadData();
-                }
+                loadData();
             }
 
             @Override
@@ -177,121 +165,32 @@ public class SalaryManagement extends AppCompatActivity {
         });
     }
 
-    // ================== LOAD DỮ LIỆU (CÓ XỬ LÝ TRÙNG LẶP) ==================
     private void loadData() {
-        // Ngăn gọi đồng thời
-        if (isLoading) {
-            return;
-        }
-        isLoading = true;
-        swipeRefreshLayout.setRefreshing(true);
-
-        // Dùng Map để gom nhóm theo shipperId, tránh trùng lặp
-        Map<String, SalaryItem> salaryMap = new HashMap<>();
-
-        db.collection("SALARIES")
-                .whereEqualTo("month", selectedMonth)
-                .whereEqualTo("year", selectedYear)
-                .get()
-                .addOnSuccessListener(salarySnapshots -> {
-                    if (salarySnapshots.isEmpty()) {
-                        salaryList.clear();
-                        salaryListFull.clear();
-                        updateUI();
-                        swipeRefreshLayout.setRefreshing(false);
-                        isLoading = false;
-                        Toast.makeText(this, "Không có dữ liệu lương cho tháng này", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-
-                    final int total = salarySnapshots.size();
-                    final int[] remaining = {total};
-
-                    for (QueryDocumentSnapshot salaryDoc : salarySnapshots) {
-                        String shipperId = salaryDoc.getString("shipperID");
-                        double totalSalary = salaryDoc.getDouble("totalSalary") != null ? salaryDoc.getDouble("totalSalary") : 0;
-                        long totalOrders = salaryDoc.getLong("totalOrders") != null ? salaryDoc.getLong("totalOrders") : 0;
-                        String paymentStatus = salaryDoc.getString("paymentStatus") != null ? salaryDoc.getString("paymentStatus") : "UNPAID";
-
-                        // Nếu đã có trong map thì bỏ qua (tránh trùng)
-                        if (salaryMap.containsKey(shipperId)) {
-                            remaining[0]--;
-                            if (remaining[0] == 0) {
-                                updateListFromMap(salaryMap);
-                            }
-                            continue;
-                        }
-
-                        db.collection("USERS")
-                                .document(shipperId)
-                                .get()
-                                .addOnSuccessListener(userDoc -> {
-                                    User user;
-                                    if (userDoc.exists()) {
-                                        user = userDoc.toObject(User.class);
-                                        if (user != null) {
-                                            user.setUserId(userDoc.getId());
-                                        }
-                                    } else {
-                                        user = new User();
-                                        user.setFullName("Shipper đã xóa");
-                                        user.setUserId(shipperId);
-                                    }
-
-                                    SalaryItem item = new SalaryItem();
-                                    item.user = user;
-                                    item.totalSalary = totalSalary;
-                                    item.totalOrders = totalOrders;
-                                    item.paymentStatus = paymentStatus;
-                                    salaryMap.put(shipperId, item);
-
-                                    remaining[0]--;
-                                    if (remaining[0] == 0) {
-                                        updateListFromMap(salaryMap);
-                                    }
-                                })
-                                .addOnFailureListener(e -> {
-                                    User user = new User();
-                                    user.setFullName("Không tìm thấy");
-                                    user.setUserId(shipperId);
-                                    SalaryItem item = new SalaryItem();
-                                    item.user = user;
-                                    item.totalSalary = totalSalary;
-                                    item.totalOrders = totalOrders;
-                                    item.paymentStatus = paymentStatus;
-                                    salaryMap.put(shipperId, item);
-
-                                    remaining[0]--;
-                                    if (remaining[0] == 0) {
-                                        updateListFromMap(salaryMap);
-                                    }
-                                });
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Lỗi tải dữ liệu lương: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    swipeRefreshLayout.setRefreshing(false);
-                    isLoading = false;
-                });
+        viewModel.load(selectedMonth, selectedYear);
     }
 
-    // Hàm cập nhật danh sách từ Map
-    private void updateListFromMap(Map<String, SalaryItem> salaryMap) {
-        salaryList.clear();
-        salaryListFull.clear();
-        salaryListFull.addAll(salaryMap.values());
-        // Sắp xếp theo totalSalary giảm dần
-        Collections.sort(salaryListFull, (o1, o2) -> Double.compare(o2.totalSalary, o1.totalSalary));
-        salaryList.addAll(salaryListFull);
-        updateUI();
-        swipeRefreshLayout.setRefreshing(false);
-        isLoading = false;
+    private void observeViewModel() {
+        viewModel.getSalaries().observe(this, rows -> {
+            salaryListFull.clear();
+            if (rows != null) salaryListFull.addAll(rows);
+            updateUI();
+        });
+
+        viewModel.getLoading().observe(this, loading -> {
+            swipeRefreshLayout.setRefreshing(Boolean.TRUE.equals(loading));
+        });
+
+        viewModel.getError().observe(this, error -> {
+            if (!TextUtils.isEmpty(error)) {
+                Toast.makeText(this, "Lỗi tải dữ liệu lương: " + error, Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void updateUI() {
         double totalSalary = 0;
         int totalUnpaid = 0;
-        for (SalaryItem item : salaryListFull) {
+        for (SalaryManagementRepository.SalaryRow item : salaryListFull) {
             totalSalary += item.totalSalary;
             if ("UNPAID".equals(item.paymentStatus)) {
                 totalUnpaid++;
@@ -306,9 +205,9 @@ public class SalaryManagement extends AppCompatActivity {
 
     private void filterData() {
         String keyword = edtSearch.getText().toString().toLowerCase().trim();
-        List<SalaryItem> filtered = new ArrayList<>();
+        List<SalaryManagementRepository.SalaryRow> filtered = new ArrayList<>();
 
-        for (SalaryItem item : salaryListFull) {
+        for (SalaryManagementRepository.SalaryRow item : salaryListFull) {
             boolean matchSearch = true;
             if (!TextUtils.isEmpty(keyword)) {
                 String name = item.user.getFullName() != null ? item.user.getFullName().toLowerCase() : "";
@@ -347,19 +246,14 @@ public class SalaryManagement extends AppCompatActivity {
     }
 
     // ================== MODEL ==================
-    private static class SalaryItem {
-        User user;
-        double totalSalary;
-        long totalOrders;
-        String paymentStatus;
-    }
+    
 
     // ================== ADAPTER ==================
     private class SalaryAdapter extends RecyclerView.Adapter<SalaryAdapter.ViewHolder> {
 
-        private List<SalaryItem> items;
+        private List<SalaryManagementRepository.SalaryRow> items;
 
-        public SalaryAdapter(List<SalaryItem> items) {
+        public SalaryAdapter(List<SalaryManagementRepository.SalaryRow> items) {
             this.items = items;
         }
 
@@ -372,7 +266,7 @@ public class SalaryManagement extends AppCompatActivity {
 
         @Override
         public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-            SalaryItem item = items.get(position);
+            SalaryManagementRepository.SalaryRow item = items.get(position);
             User user = item.user;
 
             holder.txtName.setText(user.getFullName() != null ? user.getFullName() : "Không tên");
