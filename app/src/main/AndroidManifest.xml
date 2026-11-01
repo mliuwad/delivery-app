@@ -20,6 +20,12 @@
         tools:replace="android:allowBackup"
         tools:targetApi="31">
         <activity
+            android:name=".CreatorOrderDetailActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ShipperOrderDetailActivity"
+            android:exported="false" />
+        <activity
             android:name=".OrderDetailCreatorActivity"
             android:exported="false" />
         <activity
