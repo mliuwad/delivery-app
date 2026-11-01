@@ -96,6 +96,7 @@ public class CreateOrderActivity extends AppCompatActivity {
 
     // Chế độ xem chi tiết
     private boolean isViewMode = false;
+    private boolean isCreating = false;
     private String orderId = null;
     private Order currentOrder = null;
     private List<OrderDetail> orderDetailList = new ArrayList<>();
@@ -667,34 +668,10 @@ public class CreateOrderActivity extends AppCompatActivity {
         return phone.matches(phonePattern);
     }
 
+    // Tạo mã đơn duy nhất theo thời điểm, không cần đọc toàn bộ danh sách ORDERS.
     private void generateOrderId() {
-        db.collection("ORDERS")
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    int maxNumber = 0;
-                    if (queryDocumentSnapshots.isEmpty()) {
-                        createOrderWithId("OD001");
-                        return;
-                    }
-                    for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
-                        String docId = document.getId();
-                        if (docId != null && docId.startsWith("OD")) {
-                            try {
-                                int number = Integer.parseInt(docId.substring(2));
-                                if (number > maxNumber) maxNumber = number;
-                            } catch (NumberFormatException e) {
-                                // ignore
-                            }
-                        }
-                    }
-                    int nextNumber = maxNumber + 1;
-                    String newOrderId = String.format("OD%03d", nextNumber);
-                    createOrderWithId(newOrderId);
-                })
-                .addOnFailureListener(e -> {
-                    String newOrderId = "OD" + String.format("%03d", System.currentTimeMillis() % 1000);
-                    createOrderWithId(newOrderId);
-                });
+        String newOrderId = "OD" + System.currentTimeMillis();
+        createOrderWithId(newOrderId);
     }
 
     private void createOrderWithId(String orderId) {
@@ -745,9 +722,24 @@ public class CreateOrderActivity extends AppCompatActivity {
             return;
         }
 
+        for (OrderDetail detail : selectedProductList) {
+            if (detail == null || TextUtils.isEmpty(detail.getProductId())
+                    || detail.getQuantity() <= 0
+                    || !Double.isFinite(detail.getPrice()) || detail.getPrice() < 0
+                    || !Double.isFinite(detail.getWeight()) || detail.getWeight() < 0) {
+                Toast.makeText(this, "Thông tin sản phẩm không hợp lệ. Vui lòng kiểm tra lại.",
+                        Toast.LENGTH_LONG).show();
+                return;
+            }
+        }
+
         double totalProductPrice = 0;
         for (OrderDetail detail : selectedProductList) {
             totalProductPrice += detail.getPrice() * detail.getQuantity();
+        }
+        if (!Double.isFinite(totalProductPrice) || !Double.isFinite(deliveryFee) || deliveryFee < 0) {
+            Toast.makeText(this, "Giá trị đơn hàng không hợp lệ.", Toast.LENGTH_LONG).show();
+            return;
         }
         double totalToPay = totalProductPrice + deliveryFee;
         boolean isCOD = cbCOD.isChecked();
@@ -779,77 +771,46 @@ public class CreateOrderActivity extends AppCompatActivity {
         orderData.put("deliveredAt", null);
         orderData.put("salaryAdded", false);
 
-        db.collection("ORDERS")
-                .document(orderId)
-                .set(orderData)
-                .addOnSuccessListener(aVoid -> {
-                    saveOrderDetails(orderId, new OrderDetailsCallback() {
-                        @Override
-                        public void onSuccess() {
-                            btnAction.setEnabled(true);
-                            btnAction.setText("XÁC NHẬN TẠO ĐƠN");
-                            Toast.makeText(CreateOrderActivity.this, "Tạo đơn hàng " + orderId + " thành công!", Toast.LENGTH_LONG).show();
-                            finish();
-                        }
+        isCreating = true;
+        btnAction.setEnabled(false);
+        btnAction.setText("Đang tạo...");
 
-                        @Override
-                        public void onError(String error) {
-                            btnAction.setEnabled(true);
-                            btnAction.setText("XÁC NHẬN TẠO ĐƠN");
-                            Toast.makeText(CreateOrderActivity.this, "Lỗi tạo chi tiết đơn: " + error, Toast.LENGTH_LONG).show();
-                        }
-                    });
+        // Lưu đơn và các dòng sản phẩm trong cùng một batch để tránh đơn bị thiếu sản phẩm.
+        com.google.firebase.firestore.WriteBatch batch = db.batch();
+        batch.set(db.collection("ORDERS").document(orderId), orderData);
+
+        for (int i = 0; i < selectedProductList.size(); i++) {
+            OrderDetail detail = selectedProductList.get(i);
+            Map<String, Object> detailData = new HashMap<>();
+            detailData.put("productId", detail.getProductId());
+            detailData.put("productName", detail.getProductName());
+            detailData.put("description", detail.getDescription() != null ? detail.getDescription() : "");
+            detailData.put("weight", detail.getWeight());
+            detailData.put("price", detail.getPrice());
+            detailData.put("quantity", detail.getQuantity());
+            detailData.put("imageUrl", detail.getImageUrl() != null ? detail.getImageUrl() : "");
+
+            String detailId = String.format(Locale.ROOT, "ODT%03d", i + 1);
+            batch.set(db.collection("ORDERS").document(orderId)
+                    .collection("ORDER_DETAILS").document(detailId), detailData);
+        }
+
+        batch.commit()
+                .addOnSuccessListener(unused -> {
+                    isCreating = false;
+                    Toast.makeText(this, "Tạo đơn hàng " + orderId + " thành công!",
+                            Toast.LENGTH_LONG).show();
+                    finish();
                 })
                 .addOnFailureListener(e -> {
+                    isCreating = false;
                     btnAction.setEnabled(true);
                     btnAction.setText("XÁC NHẬN TẠO ĐƠN");
-                    Toast.makeText(this, "Lỗi tạo đơn: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    Toast.makeText(this,
+                            "Không thể tạo đơn hàng. Dữ liệu chưa được lưu: " + e.getMessage(),
+                            Toast.LENGTH_LONG).show();
+                    Log.e("CreateOrderActivity", "Create order batch failed", e);
                 });
-    }
-
-    private void saveOrderDetails(String orderId, OrderDetailsCallback callback) {
-        db.collection("ORDERS")
-                .document(orderId)
-                .collection("ORDER_DETAILS")
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    int count = queryDocumentSnapshots.size();
-                    for (int i = 0; i < selectedProductList.size(); i++) {
-                        OrderDetail detail = selectedProductList.get(i);
-                        String detailId = String.format("ODT%03d", count + i + 1);
-                        Map<String, Object> detailData = new HashMap<>();
-                        detailData.put("productId", detail.getProductId());
-                        detailData.put("productName", detail.getProductName());
-                        detailData.put("description", detail.getDescription() != null ? detail.getDescription() : "");
-                        detailData.put("weight", detail.getWeight());
-                        detailData.put("price", detail.getPrice());
-                        detailData.put("quantity", detail.getQuantity());
-                        detailData.put("imageUrl", detail.getImageUrl() != null ? detail.getImageUrl() : "");
-
-                        int finalI = i;
-                        db.collection("ORDERS")
-                                .document(orderId)
-                                .collection("ORDER_DETAILS")
-                                .document(detailId)
-                                .set(detailData)
-                                .addOnSuccessListener(aVoid -> {
-                                    if (finalI == selectedProductList.size() - 1) {
-                                        callback.onSuccess();
-                                    }
-                                })
-                                .addOnFailureListener(e -> callback.onError(e.getMessage()));
-                    }
-                })
-                .addOnFailureListener(e -> callback.onError(e.getMessage()));
-    }
-
-    private interface OrderDetailsCallback {
-        void onSuccess();
-        void onError(String error);
-    }
-
-    private void createOrder() {
-        generateOrderId();
     }
 
     private String formatCurrency(int price) {
