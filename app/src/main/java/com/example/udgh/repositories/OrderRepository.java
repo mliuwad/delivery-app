@@ -247,7 +247,11 @@ public class OrderRepository {
                                 order.setOrderDetails(details);
                                 callback.onSuccess(order);
                             })
-                            .addOnFailureListener(callback::onError);
+                            .addOnFailureListener(error -> {
+                                // Giữ đơn hàng vẫn hiển thị nếu phần chi tiết sản phẩm lỗi.
+                                order.setOrderDetails(new ArrayList<>());
+                                callback.onSuccess(order);
+                            });
                 })
                 .addOnFailureListener(callback::onError);
     }
