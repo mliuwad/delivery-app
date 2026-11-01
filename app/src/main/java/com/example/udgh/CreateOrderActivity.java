@@ -761,6 +761,17 @@ public class CreateOrderActivity extends AppCompatActivity {
         orderData.put("receiverLat", receiverLat);
         orderData.put("receiverLng", receiverLng);
         orderData.put("deliveryFee", deliveryFee);
+        boolean isCOD = cbCOD.isChecked();
+        double codAmount = 0;
+        if (isCOD && !TextUtils.isEmpty(edtCOD.getText())) {
+            try {
+                codAmount = Double.parseDouble(edtCOD.getText().toString().trim());
+            } catch (NumberFormatException ignored) {
+                codAmount = 0;
+            }
+        }
+        orderData.put("isCOD", isCOD);
+        orderData.put("codAmount", codAmount);
         orderData.put("totalProductValue", totalProductPrice);
         orderData.put("status", "PENDING");
         orderData.put("note", note);
