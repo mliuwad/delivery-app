@@ -54,12 +54,6 @@ public class CreatorHomeFragment extends Fragment {
 
         view.findViewById(R.id.btnCreateOrder).setOnClickListener(v ->
                 startActivity(new android.content.Intent(requireContext(), CreateOrderActivity.class)));
-        view.findViewById(R.id.btnViewOrders).setOnClickListener(v -> {
-            if (getActivity() instanceof HomeCreatorActivity) {
-                ((HomeCreatorActivity) getActivity()).openOrdersTab();
-            }
-        });
-
         loadCreatorInfo();
         loadStatistics();
         return view;
