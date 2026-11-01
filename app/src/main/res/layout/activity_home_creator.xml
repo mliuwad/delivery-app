@@ -30,6 +30,7 @@
         android:elevation="4dp"
         app:itemBackground="@android:color/transparent"
         app:itemRippleColor="@android:color/transparent"
+        app:itemActiveIndicatorEnabled="false"
         app:itemIconTint="@color/creator_nav_tint"
         app:itemTextColor="@color/creator_nav_tint"
         app:labelVisibilityMode="labeled"
