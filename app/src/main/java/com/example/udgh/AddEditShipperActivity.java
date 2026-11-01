@@ -26,15 +26,11 @@ import com.bumptech.glide.Glide;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
+import androidx.lifecycle.ViewModelProvider;
+import com.example.udgh.viewmodels.CreateShipperViewModel;
 import org.json.JSONObject;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.HashMap;
-import java.util.Map;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.MultipartBody;
@@ -53,12 +49,11 @@ public class AddEditShipperActivity extends AppCompatActivity {
     private RadioGroup rgStatus;
     private RadioButton rbActive, rbLocked;
 
-    private FirebaseFirestore db;
-    private FirebaseAuth mAuth;
+    private CreateShipperViewModel viewModel;
+    private ProgressDialog progressDialog;
     private Uri selectedImageUri;
     private String avatarUrl = "";
 
-    private static final String IMGBB_API_KEY = "dee690b746c3dc19370022b139ad6696";
 
     private final ActivityResultLauncher<Intent> pickImageLauncher =
             registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),
@@ -87,8 +82,7 @@ public class AddEditShipperActivity extends AppCompatActivity {
             return insets;
         });
 
-        db = FirebaseFirestore.getInstance();
-        mAuth = FirebaseAuth.getInstance();
+        viewModel = new ViewModelProvider(this).get(CreateShipperViewModel.class);
 
         toolbar = findViewById(R.id.toolbar);
         imgAvatar = findViewById(R.id.imgAvatar);
@@ -112,6 +106,7 @@ public class AddEditShipperActivity extends AppCompatActivity {
 
         btnChooseImage.setOnClickListener(v -> openGallery());
         btnSave.setOnClickListener(v -> addShipper());
+        observeViewModel();
     }
 
     private void openGallery() {
@@ -190,7 +185,7 @@ public class AddEditShipperActivity extends AppCompatActivity {
 
             RequestBody requestBody = new MultipartBody.Builder()
                     .setType(MultipartBody.FORM)
-                    .addFormDataPart("key", IMGBB_API_KEY)
+                    .addFormDataPart("key", BuildConfig.IMGBB_API_KEY)
                     .addFormDataPart("image", base64Image)
                     .build();
 
@@ -265,78 +260,34 @@ public class AddEditShipperActivity extends AppCompatActivity {
     private void createShipperAccount(String fullName, String phone, String email,
                                       String citizenId, String licensePlate, String address,
                                       String password, String status, String avatarUrl) {
-        ProgressDialog progressDialog = new ProgressDialog(this);
+        progressDialog = new ProgressDialog(this);
         progressDialog.setMessage("Đang tạo tài khoản...");
         progressDialog.setCancelable(false);
         progressDialog.show();
 
-        // Tạo tài khoản Firebase Auth
-        mAuth.createUserWithEmailAndPassword(email, password)
-                .addOnSuccessListener(authResult -> {
-                    FirebaseUser firebaseUser = authResult.getUser();
-                    if (firebaseUser != null) {
-                        String userId = firebaseUser.getUid();
-
-                        // Lưu thông tin User vào Firestore
-                        Map<String, Object> userData = new HashMap<>();
-                        userData.put("fullName", fullName);
-                        userData.put("phone", phone);
-                        userData.put("email", email);
-                        userData.put("role", "SHIPPER");
-                        userData.put("status", status);
-                        userData.put("avatarUrl", avatarUrl);
-                        userData.put("createdAt", com.google.firebase.Timestamp.now());
-
-                        db.collection("USERS")
-                                .document(userId)
-                                .set(userData)
-                                .addOnSuccessListener(aVoid -> {
-                                    // Lưu ShipperDetail vào sub-collection
-                                    saveShipperDetail(userId, citizenId, licensePlate, address, progressDialog);
-                                })
-                                .addOnFailureListener(e -> {
-                                    progressDialog.dismiss();
-                                    Toast.makeText(this, "Lỗi lưu thông tin: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                                    btnSave.setEnabled(true);
-                                    btnSave.setText("Lưu thông tin");
-                                });
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    progressDialog.dismiss();
-                    Toast.makeText(this, "Lỗi tạo tài khoản: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                    btnSave.setEnabled(true);
-                    btnSave.setText("Lưu thông tin");
-                });
+        viewModel.create(fullName, phone, email, password, status,
+                avatarUrl, citizenId, licensePlate, address);
     }
 
-    private void saveShipperDetail(String userId, String citizenId, String licensePlate,
-                                   String address, ProgressDialog progressDialog) {
-        Map<String, Object> detailData = new HashMap<>();
-        detailData.put("shipperId", userId);
-        detailData.put("citizenId", citizenId);
-        detailData.put("licensePlate", licensePlate);
-        detailData.put("address", address);
-        detailData.put("joinDate", com.google.firebase.Timestamp.now());
+    private void observeViewModel() {
+        viewModel.getMessage().observe(this, message -> {
+            if (message != null && !message.trim().isEmpty()) {
+                Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+            }
+        });
 
-        db.collection("USERS")
-                .document(userId)
-                .collection("SHIPPER_DETAILS")
-                .document(userId)
-                .set(detailData)
-                .addOnSuccessListener(aVoid -> {
-                    progressDialog.dismiss();
-                    Toast.makeText(this, "Thêm nhân viên thành công!", Toast.LENGTH_LONG).show();
-                    btnSave.setEnabled(true);
-                    btnSave.setText("Lưu thông tin");
-                    finish();
-                })
-                .addOnFailureListener(e -> {
-                    progressDialog.dismiss();
-                    Toast.makeText(this, "Lỗi lưu chi tiết: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                    btnSave.setEnabled(true);
-                    btnSave.setText("Lưu thông tin");
-                });
+        viewModel.getSuccess().observe(this, success -> {
+            if (success == null) return;
+            if (progressDialog != null && progressDialog.isShowing()) {
+                progressDialog.dismiss();
+            }
+            if (success) {
+                finish();
+            } else {
+                btnSave.setEnabled(true);
+                btnSave.setText("Lưu thông tin");
+            }
+        });
     }
 
     @Override
