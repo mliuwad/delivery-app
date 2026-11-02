@@ -2,15 +2,10 @@ package com.example.udgh.repositories;
 
 import android.content.Context;
 
-import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.WriteBatch;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 public class CreateShipperRepository {
     public interface Callback {
