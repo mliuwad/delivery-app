@@ -21,6 +21,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import com.example.udgh.utils.RoleAccess;
+import com.example.udgh.utils.AppConstants;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
 import com.google.firebase.firestore.FieldValue;
@@ -29,8 +30,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Demo-only: Auth account must already be created by the project administrator
- * in Firebase Console. This screen links its UID to an employee profile.
+ * Demo-only: Admin creates a secondary Firebase Auth user and its Firestore profile.
+ * This is not a production-grade privileged provisioning service.
  */
 public class AddEmployeeActivity extends AppCompatActivity {
     private EditText name, phone, email, citizenId, plate, address, password;
@@ -248,7 +249,8 @@ public class AddEmployeeActivity extends AppCompatActivity {
         profile.put("phone", mobile);
         profile.put("email", mail);
         profile.put("role", role);
-        profile.put("status", statusSpinner.getSelectedItemPosition() == 0 ? "ACTIVE" : "LOCKED");
+        profile.put("status", statusSpinner.getSelectedItemPosition() == 0
+                ? AppConstants.AccountStatus.ACTIVE : AppConstants.AccountStatus.INACTIVE);
         profile.put("avatarUrl", "");
         profile.put("createdAt", FieldValue.serverTimestamp());
         com.google.firebase.firestore.WriteBatch batch = db.batch();
