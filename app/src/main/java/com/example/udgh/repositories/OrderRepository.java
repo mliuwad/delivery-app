@@ -241,6 +241,13 @@ public class OrderRepository {
             return;
         }
 
+        // Một Firestore batch tối đa 500 thao tác ghi: 1 đơn + tối đa 499 dòng chi tiết.
+        if (orderDetails.size() > 499) {
+            callback.onResult(false, null,
+                    new IllegalArgumentException("Một đơn hàng chỉ được có tối đa 499 dòng sản phẩm"));
+            return;
+        }
+
         String signedInUid = com.google.firebase.auth.FirebaseAuth.getInstance().getUid();
         if (signedInUid == null || !signedInUid.equals(orderData.get("creatorId"))) {
             callback.onResult(false, null,
