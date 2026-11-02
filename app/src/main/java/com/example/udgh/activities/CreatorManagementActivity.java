@@ -2,6 +2,8 @@ package com.example.udgh.activities;
 
 import android.app.AlertDialog;
 import android.os.Bundle;
+import android.content.Intent;
+import android.graphics.PorterDuff;
 import android.text.InputType;
 import android.view.View;
 import android.widget.*;
@@ -69,14 +71,24 @@ public class CreatorManagementActivity extends AppCompatActivity {
                 if (user.getAvatarUrl() != null && !user.getAvatarUrl().isEmpty())
                     com.bumptech.glide.Glide.with(CreatorManagementActivity.this)
                         .load(user.getAvatarUrl()).circleCrop().placeholder(R.drawable.delivery_man).into(h.avatar);
-                h.itemView.setOnClickListener(v -> showDetails(user));
-                h.edit.setOnClickListener(v -> showEdit(user));
+                h.itemView.setOnClickListener(v -> openDetail(user, false));
+                h.edit.setOnClickListener(v -> openDetail(user, true));
                 h.lock.setOnClickListener(v -> toggle(user));
             }
             @Override public int getItemCount() { return filtered.size(); }
         };
         list.setAdapter(adapter);
         searchView.setIconifiedByDefault(false);
+        AutoCompleteTextView searchText = searchView.findViewById(androidx.appcompat.R.id.search_src_text);
+        if (searchText != null) {
+            searchText.setTextColor(getColor(R.color.black));
+            searchText.setHintTextColor(getColor(R.color.gray));
+        }
+        for (int id : new int[]{androidx.appcompat.R.id.search_button,
+                androidx.appcompat.R.id.search_close_btn, androidx.appcompat.R.id.search_mag_icon}) {
+            ImageView icon = searchView.findViewById(id);
+            if (icon != null) icon.setColorFilter(getColor(R.color.black), PorterDuff.Mode.SRC_IN);
+        }
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override public boolean onQueryTextSubmit(String query) { render(); return true; }
             @Override public boolean onQueryTextChange(String query) { render(); return true; }
@@ -132,12 +144,11 @@ public class CreatorManagementActivity extends AppCompatActivity {
         adapter.notifyDataSetChanged();
     }
 
-    private void showDetails(User u) {
-        new AlertDialog.Builder(this).setTitle("Chi tiết nhân viên tạo đơn")
-            .setMessage("Họ tên: "+u.getFullName()+"\nEmail: "+u.getEmail()
-                +"\nSĐT: "+u.getPhone()+"\nTrạng thái: "+u.getStatus())
-            .setNegativeButton("Đóng",null)
-            .setPositiveButton("Chỉnh sửa",(d,w)->showEdit(u)).show();
+    private void openDetail(User u, boolean edit) {
+        Intent intent = new Intent(this, CreatorDetailActivity.class);
+        intent.putExtra("creatorId", u.getUserId());
+        if (edit) intent.putExtra("mode", "edit");
+        startActivity(intent);
     }
 
     private void toggle(User u) {
@@ -162,25 +173,6 @@ public class CreatorManagementActivity extends AppCompatActivity {
     @Override protected void onResume() {
         super.onResume();
         if (initialized) load();
-    }
-    private void showEdit(com.example.udgh.models.User u) {
-        LinearLayout form = new LinearLayout(this);
-        form.setOrientation(LinearLayout.VERTICAL);
-        form.setPadding(dp(20),0,dp(20),0);
-        EditText name=field("Họ tên",InputType.TYPE_CLASS_TEXT);
-        EditText phone=field("Số điện thoại",InputType.TYPE_CLASS_PHONE);
-        name.setText(u.getFullName()); phone.setText(u.getPhone());
-        form.addView(name);form.addView(phone);
-        new AlertDialog.Builder(this).setTitle("Sửa nhân viên tạo đơn").setView(form)
-          .setNegativeButton("Hủy",null).setPositiveButton("Lưu",(d,w)->{
-              String n=name.getText().toString().trim(),p=phone.getText().toString().trim();
-              if(n.isEmpty() || !p.matches("0[0-9]{9}")) {Toast.makeText(this,"Tên hoặc số điện thoại không hợp lệ",Toast.LENGTH_LONG).show();return;}
-              Map<String,Object> updates=new HashMap<>();
-              updates.put("fullName",n);updates.put("phone",p);
-              db.collection("USERS").document(u.getUserId()).update(updates)
-                .addOnSuccessListener(x->load())
-                .addOnFailureListener(e->Toast.makeText(this,e.getMessage(),Toast.LENGTH_LONG).show());
-          }).show();
     }
     private void showCreate() {
         LinearLayout form=new LinearLayout(this);
