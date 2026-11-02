@@ -21,15 +21,14 @@ service cloud.firestore {
     }
 
     match /USERS/{uid} {
-      // Admin can manage existing profiles, but cannot create new Auth users.
-      // New accounts and initial profiles are provisioned in Firebase Console.
+      // Only an active admin may create Creator/Shipper profiles.\n      // Firebase Authentication provisioning is separate from Firestore Rules.
       allow get: if own(uid) || admin();
       allow list: if admin();
       allow create: if admin() && uid != request.auth.uid
         && request.resource.data.keys().hasAll(["role", "status", "email", "fullName", "phone", "createdAt"])
         && request.resource.data.keys().hasOnly(["role", "status", "email", "fullName", "phone", "createdAt", "avatarUrl"])
         && request.resource.data.role in ["CREATOR", "SHIPPER"]
-        && request.resource.data.status in ["ACTIVE", "LOCKED"]
+        && request.resource.data.status in ["ACTIVE", "INACTIVE"]
         && request.resource.data.email is string;
       allow delete: if false;
       allow update: if admin()
