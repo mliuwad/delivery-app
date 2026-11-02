@@ -192,8 +192,11 @@ public class ShipperManagementActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         int id = item.getItemId();
         if (id == R.id.action_add) {
-            Intent intent = new Intent(this, AddEditShipperActivity.class);
-            startActivity(intent);
+            new androidx.appcompat.app.AlertDialog.Builder(this)
+                    .setTitle("Cấp tài khoản Shipper")
+                    .setMessage("Tài khoản Shipper được cấp qua Firebase Console bởi quản trị dự án. Ứng dụng không tạo tài khoản trực tiếp.")
+                    .setPositiveButton("Đã hiểu", null)
+                    .show();
             return true;
         }
         return super.onOptionsItemSelected(item);
