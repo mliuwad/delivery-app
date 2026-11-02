@@ -160,47 +160,15 @@ public class CreatorManagementActivity extends AppCompatActivity {
             .show();
     }
 
-    private int dp(int n) { return (int)(n * getResources().getDisplayMetrics().density); }
-    private EditText field(String hint, int type) {
-        EditText input = new EditText(this);
-        input.setHint(hint);
-        input.setInputType(type);
-        return input;
-    }
     @Override protected void onResume() {
         super.onResume();
         if (initialized) load();
     }
     private void showCreate() {
-        LinearLayout form=new LinearLayout(this);
-        form.setOrientation(LinearLayout.VERTICAL);
-        form.setPadding(dp(20),0,dp(20),0);
-        EditText name=field("Họ tên",InputType.TYPE_CLASS_TEXT);
-        EditText phone=field("Số điện thoại",InputType.TYPE_CLASS_PHONE);
-        EditText email=field("Email",InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
-        EditText pass=field("Mật khẩu (ít nhất 6 ký tự)",InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
-        form.addView(name);form.addView(phone);form.addView(email);form.addView(pass);
-        AlertDialog dialog=new AlertDialog.Builder(this).setTitle("Tạo tài khoản Creator")
-            .setView(form).setNegativeButton("Hủy",null).setPositiveButton("Tạo",null).create();
-        dialog.setOnShowListener(x->dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v->{
-            String n=name.getText().toString().trim(),p=phone.getText().toString().trim(),e=email.getText().toString().trim(),pw=pass.getText().toString();
-            if(n.isEmpty() || !p.matches("0[0-9]{9}") || !android.util.Patterns.EMAIL_ADDRESS.matcher(e).matches() || pw.length()<6){
-                Toast.makeText(this,"Kiểm tra lại tên, SĐT, email và mật khẩu",Toast.LENGTH_LONG).show();return;
-            }
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
-            Map<String,Object> payload=new HashMap<>();
-            payload.put("fullName",n);
-            payload.put("phone",p);
-            payload.put("email",e);
-            payload.put("password",pw);
-            com.google.firebase.functions.FirebaseFunctions.getInstance()
-                .getHttpsCallable("createCreator").call(payload)
-                .addOnSuccessListener(result->{dialog.dismiss();load();})
-                .addOnFailureListener(err->{
-                    dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true);
-                    Toast.makeText(this,"Không tạo được Creator: "+err.getMessage(),Toast.LENGTH_LONG).show();
-                });
-        }));
-        dialog.show();
+        new AlertDialog.Builder(this)
+                .setTitle("Cấp tài khoản Creator")
+                .setMessage("Tài khoản mới được cấp qua Firebase Console bởi quản trị dự án. Ứng dụng không hỗ trợ tạo tài khoản trực tiếp để bảo vệ quyền truy cập.")
+                .setPositiveButton("Đã hiểu", null)
+                .show();
     }
 }
