@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel;
 
 import com.example.udgh.models.Order;
 import com.example.udgh.repositories.OrderRepository;
+import com.example.udgh.utils.AppConstants;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -100,7 +101,12 @@ public class OrderViewModel extends ViewModel {
     private int requestId = 0;
 
     public OrderViewModel() {
-        repository = new OrderRepository();
+        this(new OrderRepository());
+    }
+
+    /** Constructor injection for unit tests. */
+    public OrderViewModel(OrderRepository repository) {
+        this.repository = repository;
     }
 
     public LiveData<List<Order>> getOrders() {
@@ -310,8 +316,8 @@ public class OrderViewModel extends ViewModel {
 
     private boolean matchesCurrentStatus(Order order) {
         if ("ALL".equals(currentFilter)) return true;
-        if ("PENDING".equals(currentFilter)) {
-            return "PENDING".equals(order.getStatus()) || "WAITING".equals(order.getStatus());
+        if (AppConstants.OrderStatuses.PENDING.equals(currentFilter)) {
+            return AppConstants.OrderStatuses.PENDING.equals(order.getStatus()) || AppConstants.OrderStatuses.WAITING.equals(order.getStatus());
         }
         return currentFilter.equals(order.getStatus());
     }
