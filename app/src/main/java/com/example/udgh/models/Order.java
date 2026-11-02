@@ -22,6 +22,9 @@ public class Order {
     private boolean isCOD;
     private double codAmount;
     private double totalProductValue;
+    private int itemCount;
+    private int totalQuantity;
+    private double totalAmount;
     private String status;
     private String note;
     private Timestamp createdAt;
@@ -85,6 +88,15 @@ public class Order {
 
     public double getTotalProductValue() { return totalProductValue; }
     public void setTotalProductValue(double totalProductValue) { this.totalProductValue = totalProductValue; }
+
+    public int getItemCount() { return itemCount; }
+    public void setItemCount(int itemCount) { this.itemCount = itemCount; }
+
+    public int getTotalQuantity() { return totalQuantity; }
+    public void setTotalQuantity(int totalQuantity) { this.totalQuantity = totalQuantity; }
+
+    public double getTotalAmount() { return totalAmount; }
+    public void setTotalAmount(double totalAmount) { this.totalAmount = totalAmount; }
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
