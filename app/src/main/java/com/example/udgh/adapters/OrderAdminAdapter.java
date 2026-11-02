@@ -146,7 +146,17 @@ public class OrderAdminAdapter
             tvProduct.setTextColor(
                     holder.itemView.getContext().getColor(R.color.gray)
             );
-            tvProduct.setText("Không có sản phẩm");
+            String preview = order.getProductPreviewName();
+            if (preview != null && !preview.trim().isEmpty()) {
+                String summary = "• " + preview;
+                if (order.getTotalQuantity() > 0) summary += " (Tổng SL: " + order.getTotalQuantity() + ")";
+                if (order.getItemCount() > 1) summary += " · " + order.getItemCount() + " loại";
+                tvProduct.setText(summary);
+            } else if (order.getItemCount() > 0) {
+                tvProduct.setText("Có " + order.getItemCount() + " loại sản phẩm · Tổng SL: " + order.getTotalQuantity());
+            } else {
+                tvProduct.setText("Xem chi tiết sản phẩm");
+            }
 
             holder.llProductList.addView(tvProduct);
         }
