@@ -44,7 +44,9 @@ public class AddEmployeeActivity extends AppCompatActivity {
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
         role = "SHIPPER".equals(getIntent().getStringExtra("role")) ? "SHIPPER" : "CREATOR";
-        RoleAccess.requireRole(this, "ADMIN", this::initialize);
+        initialize();
+        save.setEnabled(false);
+        RoleAccess.requireRole(this, "ADMIN", () -> save.setEnabled(true));
     }
 
     private EditText field(LinearLayout root, String hint) {
