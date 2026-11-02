@@ -27,3 +27,5 @@ exports.notifyShippersOnNewOrder = onDocumentCreated("ORDERS/{orderId}", async e
 });
 
 exports.createShipper = require("./createShipper").createShipper;
+
+exports.createCreator = require("./createCreator").createCreator;
