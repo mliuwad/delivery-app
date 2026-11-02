@@ -1,33 +1,27 @@
-# Account setup without Cloud Functions
+# Cấp tài khoản Creator và Shipper (demo Firebase Spark)
 
-This CV/demo application uses Firebase Authentication and Cloud Firestore on the client, with **no Cloud Functions dependency**. Public self-registration and in-app account provisioning are disabled.
+Ứng dụng không cho người dùng tự đăng ký trong giao diện đăng nhập. **Admin đang hoạt động** có thể mở Quản lý Creator/Shipper → Thêm, nhập tên, số điện thoại, email, mật khẩu ban đầu và trạng thái (Hoạt động/Khóa), rồi bấm **Lưu**.
 
-## Add an account manually (project administrator only)
+Ứng dụng dùng Firebase Authentication thứ hai (secondary FirebaseApp) để tạo tài khoản mới mà không thay đổi phiên đăng nhập Admin chính. Firebase Auth tự sinh UID; ứng dụng ghi hồ sơ `USERS/{uid}`, và với Shipper ghi thêm `USERS/{uid}/SHIPPER_DETAILS/{uid}`. Nếu ghi Firestore thất bại, ứng dụng cố gắng xóa tài khoản Auth mới; việc hoàn tác không được đảm bảo. Hiện Admin nhập mật khẩu ban đầu, chưa có luồng email đặt mật khẩu riêng.
 
-1. Open the Firebase Console for the correct project.
-2. In **Authentication > Users**, add a user with email and password. Copy the generated **UID**.
-3. In **Firestore Database**, create a document in collection `USERS` with **document ID exactly equal to that UID**.
-4. Add these fields using the appropriate Firestore types:
-   - `fullName`: string
-   - `email`: string (same email as Auth)
-   - `phone`: string
-   - `role`: string, exactly `ADMIN`, `CREATOR`, or `SHIPPER`
-   - `status`: string, exactly `ACTIVE`
-   - `avatarUrl`: string (empty is fine)
-   - `createdAt`: timestamp
-5. For Shippers, also create `USERS/{uid}/SHIPPER_DETAILS/{uid}` with fields `shipperId` (string UID), `citizenId` (string), `licensePlate` (string), `address` (string), and `joinDate` (timestamp).
-6. Log in using the email and password in the Android app.
+## Khởi tạo Admin đầu tiên
 
-Never store passwords in Firestore. Never commit credentials or personal identity details to GitHub.
+Chỉ tài khoản Admin đầu tiên cần tạo thủ công trong Firebase Console:
 
-## Security warning
+1. Firebase Console → Authentication → Users → thêm tài khoản Email/Password, sao chép UID.
+2. Firestore → `USERS/{uid}` với `role: "ADMIN"`, `status: "ACTIVE"`, `email`, `fullName`, `phone`, `avatarUrl` và `createdAt`.
+3. Đăng nhập bằng Admin này trong ứng dụng.
 
-**Hiding the registration screen does not secure Firestore.** Firestore Security Rules must enforce that clients cannot create or change privileged roles or statuses. Existing Firebase Rules must be audited and tested with the Firebase Emulator before the app is used with real user data. Firebase Console administrative changes bypass client Rules.
+Không tạo tài khoản ADMIN từ giao diện Thêm nhân viên. Không lưu mật khẩu trong Firestore.
 
-This setup is intended for a controlled demonstration with test accounts. Do not use real citizen IDs or other sensitive personal data in demo records.
+## Trạng thái
 
-## Known limitations
+Tài khoản mới lưu `ACTIVE` (Hoạt động) hoặc `INACTIVE` (Khóa). Nếu dữ liệu demo cũ đang lưu `LOCKED`, chuyển sang `INACTIVE` trước khi áp dụng quy tắc mới.
 
-- Creating accounts is done manually in Firebase Console, not in the Android app.
-- Android build and end-to-end login tests still need to be run locally.
-- Old ImgBB API keys must be revoked separately in the ImgBB dashboard.
+## Giới hạn và cảnh báo
+
+- Đây là demo phía client, **không phải dịch vụ cấp tài khoản đặc quyền an toàn cho production**. Firebase Auth cho phép tạo tài khoản theo cấu hình Authentication độc lập với Firestore Rules; Rules chỉ giới hạn thao tác với Firestore.
+- `firestore.rules` trong repo **chưa hoàn thiện**: hiện từ chối cập nhật đơn hàng và ghi lương. Không deploy lên dự án đang chạy cho đến khi đã hoàn thiện và kiểm thử Emulator.
+- Chưa xác nhận build Android và kiểm thử tích hợp thực tế.
+- Chỉ dùng tài khoản và dữ liệu giả lập; không đưa CCCD hoặc thông tin nhạy cảm thật vào repo.
+- Chủ sở hữu cần thu hồi API key ImgBB cũ tại nhà cung cấp; sửa lịch sử Git không làm key cũ mất hiệu lực.
