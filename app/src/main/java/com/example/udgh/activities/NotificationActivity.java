@@ -36,11 +36,12 @@ public class NotificationActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
+        // Hiển thị giao diện ngay
+        setContentView(R.layout.activity_notification);
         RoleAccess.requireRole(this, "SHIPPER", this::initialize);
     }
 
     private void initialize() {
-        setContentView(R.layout.activity_notification);
         MaterialToolbar toolbar = findViewById(R.id.toolbar);
         toolbar.setNavigationOnClickListener(v -> finish());
 
