@@ -467,44 +467,34 @@ public class OrderRepository {
                 .addOnFailureListener(callback::onError);
     }
 
-    // Tải chi tiết sản phẩm của từng đơn hàng
-    private void loadOrderDetails(
-            List<Order> orders,
-            ResultCallback<List<Order>> callback
-    ) {
-        int total = orders.size();
-        AtomicInteger completed = new AtomicInteger(0);
-
+    // Chỉ truy vấn chi tiết cho đơn cũ chưa có dữ liệu tóm tắt.
+    private void loadOrderDetails(List<Order> orders, ResultCallback<List<Order>> callback) {
+        List<Order> legacyOrders = new ArrayList<>();
         for (Order order : orders) {
-
-            db.collection(COLLECTION)
-                    .document(order.getOrderId())
-                    .collection(AppConstants.Collections.ORDER_DETAILS)
-                    .get()
+            if ((order.getProductPreviewName() == null || order.getProductPreviewName().trim().isEmpty())
+                    && order.getItemCount() <= 0 && order.getTotalQuantity() <= 0) {
+                legacyOrders.add(order);
+            }
+        }
+        if (legacyOrders.isEmpty()) {
+            callback.onSuccess(orders);
+            return;
+        }
+        AtomicInteger completed = new AtomicInteger(0);
+        for (Order order : legacyOrders) {
+            db.collection(COLLECTION).document(order.getOrderId())
+                    .collection(AppConstants.Collections.ORDER_DETAILS).get()
                     .addOnSuccessListener(snapshot -> {
-
                         List<OrderDetail> details = new ArrayList<>();
-
                         for (QueryDocumentSnapshot doc : snapshot) {
-                            OrderDetail detail = doc.toObject(OrderDetail.class);
-                            details.add(detail);
+                            details.add(doc.toObject(OrderDetail.class));
                         }
-
                         order.setOrderDetails(details);
-
-                        if (completed.incrementAndGet() == total) {
-                            callback.onSuccess(orders);
-                        }
+                        if (completed.incrementAndGet() == legacyOrders.size()) callback.onSuccess(orders);
                     })
-                    .addOnFailureListener(e -> {
-
-                        // Giữ hành vi cũ:
-                        // Nếu không tải được chi tiết thì đơn vẫn được hiển thị.
+                    .addOnFailureListener(error -> {
                         order.setOrderDetails(new ArrayList<>());
-
-                        if (completed.incrementAndGet() == total) {
-                            callback.onSuccess(orders);
-                        }
+                        if (completed.incrementAndGet() == legacyOrders.size()) callback.onSuccess(orders);
                     });
         }
     }
