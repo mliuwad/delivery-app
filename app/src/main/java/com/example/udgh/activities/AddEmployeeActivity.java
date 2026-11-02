@@ -14,6 +14,8 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.android.material.textfield.TextInputLayout;
 import android.widget.ImageView;
+import android.widget.Spinner;
+import android.widget.ArrayAdapter;
 import com.example.udgh.R;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -35,6 +37,7 @@ public class AddEmployeeActivity extends AppCompatActivity {
     private FirebaseApp secondaryApp;
     private FirebaseAuth secondaryAuth;
     private MaterialButton save;
+    private Spinner statusSpinner;
     private String role;
     private final FirebaseFirestore db = FirebaseFirestore.getInstance();
 
@@ -70,7 +73,19 @@ public class AddEmployeeActivity extends AppCompatActivity {
         TextView heading = findViewById(R.id.txtName);
         heading.setText("Nhân viên mới");
         TextView status = findViewById(R.id.txtStatus);
-        status.setText("Hoạt động");
+        status.setVisibility(View.GONE);
+        LinearLayout statusParent = (LinearLayout) status.getParent();
+        statusSpinner = new Spinner(this);
+        ArrayAdapter<String> statusAdapter = new ArrayAdapter<>(this,
+                R.layout.spinner_item_black,
+                new String[]{"Hoạt động", "Khóa"});
+        statusAdapter.setDropDownViewResource(R.layout.spinner_dropdown_item_black);
+        statusSpinner.setAdapter(statusAdapter);
+        LinearLayout.LayoutParams statusParams = new LinearLayout.LayoutParams(-1, dp(52));
+        statusParams.topMargin = dp(8);
+        statusParams.bottomMargin = dp(12);
+        statusSpinner.setBackgroundResource(R.drawable.bg_edit_text);
+        statusParent.addView(statusSpinner, statusParent.indexOfChild(status) + 1, statusParams);
 
         name = findViewById(R.id.txtFullName);
         phone = findViewById(R.id.txtPhone);
@@ -220,7 +235,7 @@ public class AddEmployeeActivity extends AppCompatActivity {
         profile.put("phone", mobile);
         profile.put("email", mail);
         profile.put("role", role);
-        profile.put("status", "ACTIVE");
+        profile.put("status", statusSpinner.getSelectedItemPosition() == 0 ? "ACTIVE" : "LOCKED");
         profile.put("avatarUrl", "");
         profile.put("createdAt", FieldValue.serverTimestamp());
         com.google.firebase.firestore.WriteBatch batch = db.batch();
