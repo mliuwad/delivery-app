@@ -104,8 +104,8 @@ public class StatisticsActivity extends AppCompatActivity {
         List<String> months = new ArrayList<>();
         for (int i = 1; i <= 12; i++) months.add("Tháng " + i + "/" + selectedYear);
         ArrayAdapter<String> spinnerAdapter = new ArrayAdapter<>(
-                this, android.R.layout.simple_spinner_item, months);
-        spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                this, R.layout.spinner_item_black, months);
+        spinnerAdapter.setDropDownViewResource(R.layout.spinner_dropdown_item_black);
         spMonth.setAdapter(spinnerAdapter);
         spMonth.setSelection(selectedMonth - 1);
         spMonth.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
