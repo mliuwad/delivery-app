@@ -174,7 +174,7 @@
             app:chipStrokeColor="@color/primary"
             app:chipStrokeWidth="1dp"
             app:checkedIconVisible="false"
-            app:chipTextColor="@color/salary_chip_text"
+            android:textColor="@color/salary_chip_text"
             android:checkable="true"
             android:checked="true"
             android:text="Tất cả"
@@ -188,7 +188,7 @@
             app:chipStrokeColor="@color/primary"
             app:chipStrokeWidth="1dp"
             app:checkedIconVisible="false"
-            app:chipTextColor="@color/salary_chip_text"
+            android:textColor="@color/salary_chip_text"
             android:checkable="true"
             android:text="Đã thanh toán"
             android:textSize="12sp" />
@@ -201,7 +201,7 @@
             app:chipStrokeColor="@color/primary"
             app:chipStrokeWidth="1dp"
             app:checkedIconVisible="false"
-            app:chipTextColor="@color/salary_chip_text"
+            android:textColor="@color/salary_chip_text"
             android:checkable="true"
             android:text="Chưa thanh toán"
             android:textSize="12sp" />
