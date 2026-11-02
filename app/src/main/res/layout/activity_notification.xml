@@ -17,6 +17,7 @@
         android:background="@color/primary"
         app:navigationIcon="@drawable/sgv_back"
         app:title="Thông báo"
+        app:titleTextAppearance="@style/ToolbarTitleStyle"
         app:titleCentered="false"
         app:titleTextColor="@android:color/white" />
 
