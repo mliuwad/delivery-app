@@ -84,6 +84,11 @@ public class SalaryShipperRepository {
                     }
                     AtomicInteger done = new AtomicInteger();
                     for (Order order : orders) {
+                        // New orders carry a product preview; fetch details only for legacy orders.
+                        if (order.getProductPreviewName() != null && !order.getProductPreviewName().isEmpty()) {
+                            finish(done, orders, amount, count, status, callback);
+                            continue;
+                        }
                         db.collection("ORDERS").document(order.getOrderId()).collection("ORDER_DETAILS").get()
                                 .addOnSuccessListener(details -> {
                                     List<OrderDetail> items = new ArrayList<>();
