@@ -1,4 +1,4 @@
-# Cấp tài khoản Creator và Shipper (demo Firebase Spark)
+# Hướng dẫn cấp tài khoản người tạo đơn và nhân viên giao hàng
 
 Ứng dụng không cho người dùng tự đăng ký trong giao diện đăng nhập. **Admin đang hoạt động** có thể mở Quản lý Creator/Shipper → Thêm, nhập tên, số điện thoại, email, mật khẩu ban đầu và trạng thái (Hoạt động/Khóa), rồi bấm **Lưu**.
 
@@ -16,12 +16,12 @@ Không tạo tài khoản ADMIN từ giao diện Thêm nhân viên. Không lưu 
 
 ## Trạng thái
 
-Tài khoản mới lưu `ACTIVE` (Hoạt động) hoặc `INACTIVE` (Khóa). Nếu dữ liệu demo cũ đang lưu `LOCKED`, chuyển sang `INACTIVE` trước khi áp dụng quy tắc mới.
+Tài khoản mới lưu `ACTIVE` (Hoạt động) hoặc `INACTIVE` (Khóa). Nếu dữ liệu bản trình diễn cũ đang lưu `LOCKED`, chuyển sang `INACTIVE` trước khi áp dụng quy tắc mới.
 
 ## Giới hạn và cảnh báo
 
-- Đây là demo phía client, **không phải dịch vụ cấp tài khoản đặc quyền an toàn cho production**. Firebase Auth cho phép tạo tài khoản theo cấu hình Authentication độc lập với Firestore Rules; Rules chỉ giới hạn thao tác với Firestore.
-- `firestore.rules` trong repo **chưa hoàn thiện**: hiện từ chối cập nhật đơn hàng và ghi lương. Không deploy lên dự án đang chạy cho đến khi đã hoàn thiện và kiểm thử Emulator.
+- Đây là bản trình diễn phía máy khách, **không phải dịch vụ cấp tài khoản đặc quyền an toàn cho môi trường thực tế**. Firebase Auth cho phép tạo tài khoản theo cấu hình Authentication độc lập với Firestore Rules; Rules chỉ giới hạn thao tác với Firestore.
+- `firestore.rules` đã bổ sung các luồng đơn hàng, sản phẩm, hồ sơ và lương cho bản trình diễn, nhưng **chưa được xác nhận bằng kiểm thử Emulator và kiểm thử tích hợp**. Không triển khai lên cơ sở dữ liệu đang sử dụng trước khi kiểm thử. Phần cộng lương do ứng dụng phía máy khách thực hiện nên chưa thể bảo đảm chống gian lận tuyệt đối chỉ bằng Rules.
 - Chưa xác nhận build Android và kiểm thử tích hợp thực tế.
 - Chỉ dùng tài khoản và dữ liệu giả lập; không đưa CCCD hoặc thông tin nhạy cảm thật vào repo.
 - Chủ sở hữu cần thu hồi API key ImgBB cũ tại nhà cung cấp; sửa lịch sử Git không làm key cũ mất hiệu lực.
