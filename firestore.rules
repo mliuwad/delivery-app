@@ -1,97 +1,182 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    function signedIn() {
-      return request.auth != null;
-    }
-    function profile() {
-      return get(/databases/$(database)/documents/USERS/$(request.auth.uid));
+    function signedIn() { return request.auth != null; }
+    function userPath(uid) {
+      return /databases/$(database)/documents/USERS/$(uid);
     }
     function active() {
-      return signedIn() && profile().data.status == "ACTIVE";
+      return signedIn() && exists(userPath(request.auth.uid))
+        && get(userPath(request.auth.uid)).data.status == "ACTIVE";
     }
-    function role(name) {
-      return active() && profile().data.role == name;
+    function role(r) {
+      return active() && get(userPath(request.auth.uid)).data.role == r;
     }
-    function admin() {
-      return role("ADMIN");
+    function admin() { return role("ADMIN"); }
+    function creator() { return role("CREATOR"); }
+    function shipper() { return role("SHIPPER"); }
+    function own(uid) { return signedIn() && request.auth.uid == uid; }
+    function pending(status) { return status in ["PENDING", "WAITING"]; }
+    function assignedToMe(order) {
+      return shipper() && order.shipperId == request.auth.uid;
     }
-    function own(uid) {
-      return signedIn() && request.auth.uid == uid;
+    function pendingAvailable(order) {
+      return shipper() && pending(order.status)
+        && (!("shipperId" in order) || order.shipperId == "" || order.shipperId == null);
+    }
+    function orderReadable(order) {
+      return admin()
+        || (creator() && order.creatorId == request.auth.uid)
+        || assignedToMe(order)
+        || pendingAvailable(order);
+    }
+    function orderChangedOnly(fields) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(fields);
+    }
+    function salaryIncrement() {
+      return shipper()
+        && resource.data.shipperID == request.auth.uid
+        && request.resource.data.shipperID == resource.data.shipperID
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(["totalOrders", "totalSalary", "paymentStatus", "paymentDate"])
+        && request.resource.data.totalOrders == resource.data.totalOrders + 1
+        && request.resource.data.totalSalary is number
+        && request.resource.data.totalSalary >= resource.data.totalSalary
+        && request.resource.data.paymentStatus == "UNPAID"
+        && request.resource.data.paymentDate == null;
     }
 
     match /USERS/{uid} {
-      // Only an active admin may create Creator/Shipper profiles.
-      // Firebase Authentication provisioning is separate from Firestore Rules.
       allow get: if own(uid) || admin();
       allow list: if admin();
-      allow create: if admin() && uid != request.auth.uid
+      allow create: if admin() && !own(uid)
         && request.resource.data.keys().hasAll(["role", "status", "email", "fullName", "phone", "createdAt"])
         && request.resource.data.keys().hasOnly(["role", "status", "email", "fullName", "phone", "createdAt", "avatarUrl"])
         && request.resource.data.role in ["CREATOR", "SHIPPER"]
-        && request.resource.data.status in ["ACTIVE", "INACTIVE"]
-        && request.resource.data.email is string;
-      allow delete: if false;
-      allow update: if (own(uid) && role("SHIPPER")
-        && request.resource.data.diff(resource.data).affectedKeys()
-             .hasOnly(["fullName", "phone", "avatarUrl"])
-        && request.resource.data.fullName is string
-        && request.resource.data.phone is string
-        && request.resource.data.avatarUrl is string)
-        || (admin()
-        && request.resource.data.role == resource.data.role
-        && request.resource.data.email == resource.data.email
-        && request.resource.data.createdAt == resource.data.createdAt
-        && request.resource.data.diff(resource.data).affectedKeys()
-             .hasOnly(["fullName", "phone", "status", "avatarUrl"]));
+        && request.resource.data.status in ["ACTIVE", "INACTIVE"];
+      allow update: if
+        (admin() && uid != request.auth.uid
+          && resource.data.role in ["CREATOR", "SHIPPER"]
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(["fullName", "phone", "email", "status", "avatarUrl"])
+          && request.resource.data.role == resource.data.role
+          && request.resource.data.createdAt == resource.data.createdAt
+          && request.resource.data.status in ["ACTIVE", "INACTIVE"])
+        || (own(uid) && shipper()
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(["fullName", "phone", "email", "avatarUrl"])
+          && request.resource.data.role == resource.data.role
+          && request.resource.data.status == resource.data.status
+          && request.resource.data.createdAt == resource.data.createdAt);
+      allow delete: if admin() && uid != request.auth.uid
+        && resource.data.role in ["CREATOR", "SHIPPER"];
 
       match /SHIPPER_DETAILS/{detailId} {
-        allow read: if admin() || (own(uid) && role("SHIPPER"));
-        allow create: if admin() && detailId == uid
-          && getAfter(/databases/$(database)/documents/USERS/$(uid)).data.role == "SHIPPER"
+        allow read: if admin() || (own(uid) && shipper());
+        allow create: if (admin() || (own(uid) && shipper()))
+          && detailId == uid
+          && getAfter(userPath(uid)).data.role == "SHIPPER"
           && request.resource.data.shipperId == uid;
-        allow update, delete: if false;
+        allow update: if (admin() || (own(uid) && shipper()))
+          && request.resource.data.shipperId == resource.data.shipperId
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(["citizenId", "licensePlate", "address", "gender", "birthday", "note", "avatarUrl"]);
+        allow delete: if admin();
       }
     }
 
     match /PRODUCTS/{productId} {
-      allow read: if active();
-      allow create, update, delete: if admin();
+      // Shipper can view product details referenced by orders.
+      allow get: if active();
+      // Creator queries filter by createdBy; Admin can list all.
+      allow list: if admin() || (creator()
+        && resource.data.createdBy == request.auth.uid);
+      allow create: if (creator() || admin())
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.productId == productId
+        && request.resource.data.isActive == true
+        && request.resource.data.price is number
+        && request.resource.data.price >= 0;
+      allow update: if (creator() || admin())
+        && resource.data.createdBy == request.auth.uid
+        && request.resource.data.createdBy == resource.data.createdBy
+        && request.resource.data.productId == resource.data.productId
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(["productName", "description", "weight", "price", "imageUrl", "isActive"])
+        && request.resource.data.price is number
+        && request.resource.data.price >= 0;
+      allow delete: if admin();
     }
 
     match /ORDERS/{orderId} {
-      allow read: if admin()
-        || (role("CREATOR") && resource.data.creatorId == request.auth.uid)
-        || (role("SHIPPER") && (
-          resource.data.shipperId == request.auth.uid ||
-          ((resource.data.status in ["PENDING", "WAITING"])
-            && resource.data.shipperId == "")
-        ));
-      allow create: if role("CREATOR")
+      allow get, list: if orderReadable(resource.data);
+      allow create: if creator()
         && request.resource.data.creatorId == request.auth.uid
-        && request.resource.data.status in ["PENDING", "WAITING"]
-        && request.resource.data.shipperId == "";
-      // Status transitions and salary updates must be reviewed together before
-      // enabling writes from mobile clients.
-      allow update, delete: if false;
+        && pending(request.resource.data.status)
+        && request.resource.data.shipperId == ""
+        && request.resource.data.deliveryFee is number
+        && request.resource.data.deliveryFee >= 0
+        && (!("salaryAdded" in request.resource.data)
+          || request.resource.data.salaryAdded == false);
+      allow update: if
+        (creator()
+          && resource.data.creatorId == request.auth.uid
+          && pending(resource.data.status)
+          && request.resource.data.status == "CANCELLED"
+          && orderChangedOnly(["status"]))
+        || (shipper()
+          && pending(resource.data.status)
+          && pendingAvailable(resource.data)
+          && request.resource.data.status == "DELIVERING"
+          && request.resource.data.shipperId == request.auth.uid
+          && orderChangedOnly(["status", "shipperId"]))
+        || (assignedToMe(resource.data)
+          && resource.data.status == "DELIVERING"
+          && request.resource.data.status == "COMPLETED"
+          && request.resource.data.salaryAdded == true
+          && request.resource.data.deliveredAt is timestamp
+          && orderChangedOnly(["status", "deliveredAt", "salaryAdded"]));
+      allow delete: if false;
 
       match /ORDER_DETAILS/{detailId} {
-        allow read: if admin() || (
-          signedIn() && exists(/databases/$(database)/documents/ORDERS/$(orderId))
-          && (
-            (role("CREATOR") && get(/databases/$(database)/documents/ORDERS/$(orderId)).data.creatorId == request.auth.uid)
-            || (role("SHIPPER") && get(/databases/$(database)/documents/ORDERS/$(orderId)).data.shipperId == request.auth.uid)
-          )
-        );
-        allow create: if role("CREATOR")
-          && getAfter(/databases/$(database)/documents/ORDERS/$(orderId)).data.creatorId == request.auth.uid;
+        function parentOrder() {
+          return get(/databases/$(database)/documents/ORDERS/$(orderId)).data;
+        }
+        allow read: if exists(/databases/$(database)/documents/ORDERS/$(orderId))
+          && orderReadable(parentOrder());
+        allow create: if creator()
+          && getAfter(/databases/$(database)/documents/ORDERS/$(orderId)).data.creatorId
+             == request.auth.uid;
         allow update, delete: if false;
       }
     }
 
     match /SALARIES/{salaryId} {
-      allow read: if admin() || (role("SHIPPER") && resource.data.shipperID == request.auth.uid);
-      allow write: if false;
+      allow get, list: if admin()
+        || (shipper() && resource.data.shipperID == request.auth.uid);
+      // DEMO LIMITATION: client-side salary increments cannot be fully
+      // tied to exactly one completed order without a trusted backend.
+      allow create: if shipper()
+        && salaryId.matches('SL_.*')
+        && request.resource.data.shipperID == request.auth.uid
+        && request.resource.data.totalOrders == 1
+        && request.resource.data.totalSalary is number
+        && request.resource.data.totalSalary >= 0
+        && request.resource.data.paymentStatus == "UNPAID"
+        && request.resource.data.paymentDate == null
+        && request.resource.data.month is int
+        && request.resource.data.month >= 1
+        && request.resource.data.month <= 12
+        && request.resource.data.year is int;
+      allow update: if salaryIncrement()
+        || (admin()
+          && resource.data.paymentStatus == "UNPAID"
+          && request.resource.data.paymentStatus == "PAID"
+          && request.resource.data.paymentDate == request.time
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(["paymentStatus", "paymentDate"]));
+      allow delete: if false;
     }
 
     match /{document=**} {
