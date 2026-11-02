@@ -241,6 +241,19 @@ public class OrderRepository {
             return;
         }
 
+        String signedInUid = com.google.firebase.auth.FirebaseAuth.getInstance().getUid();
+        if (signedInUid == null || !signedInUid.equals(orderData.get("creatorId"))) {
+            callback.onResult(false, null,
+                    new SecurityException("Không thể tạo đơn hàng cho tài khoản khác"));
+            return;
+        }
+        Object initialStatus = orderData.get("status");
+        if (!"PENDING".equals(initialStatus) && !"WAITING".equals(initialStatus)) {
+            callback.onResult(false, null,
+                    new IllegalArgumentException("Trạng thái đơn mới không hợp lệ"));
+            return;
+        }
+
         com.google.firebase.firestore.WriteBatch batch = db.batch();
         com.google.firebase.firestore.DocumentReference orderRef =
                 db.collection(COLLECTION).document(orderId);
