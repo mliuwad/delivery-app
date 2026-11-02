@@ -150,14 +150,15 @@ public class CreatorManagementActivity extends AppCompatActivity {
 
     private void toggle(User u) {
         boolean active = "ACTIVE".equalsIgnoreCase(u.getStatus());
-        new AlertDialog.Builder(this)
-            .setMessage(active ? "Khóa tài khoản này?" : "Mở khóa tài khoản này?")
-            .setNegativeButton("Hủy",null)
-            .setPositiveButton("Xác nhận",(d,w)->db.collection("USERS").document(u.getUserId())
-                .update("status",active ? "INACTIVE":"ACTIVE")
-                .addOnSuccessListener(x->load())
-                .addOnFailureListener(e->Toast.makeText(this,e.getMessage(),Toast.LENGTH_LONG).show()))
-            .show();
+        db.collection("USERS").document(u.getUserId())
+            .update("status", active ? "INACTIVE" : "ACTIVE")
+            .addOnSuccessListener(v -> {
+                Toast.makeText(this, active ? "Đã khóa tài khoản" : "Đã mở khóa tài khoản",
+                    Toast.LENGTH_SHORT).show();
+                load();
+            })
+            .addOnFailureListener(e -> Toast.makeText(this,
+                "Không thể cập nhật: " + e.getMessage(), Toast.LENGTH_LONG).show());
     }
 
     @Override protected void onResume() {
@@ -165,10 +166,7 @@ public class CreatorManagementActivity extends AppCompatActivity {
         if (initialized) load();
     }
     private void showCreate() {
-        new AlertDialog.Builder(this)
-                .setTitle("Cấp tài khoản Creator")
-                .setMessage("Tài khoản mới được cấp qua Firebase Console bởi quản trị dự án. Ứng dụng không hỗ trợ tạo tài khoản trực tiếp để bảo vệ quyền truy cập.")
-                .setPositiveButton("Đã hiểu", null)
-                .show();
+        startActivity(new Intent(this, AddEmployeeActivity.class)
+            .putExtra("role", "CREATOR"));
     }
 }
