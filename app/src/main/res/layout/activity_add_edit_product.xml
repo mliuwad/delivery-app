@@ -18,6 +18,7 @@
         android:background="@color/primary"
         app:navigationIcon="@drawable/sgv_back"
         app:title="Thêm sản phẩm"
+        app:titleCentered="false"
         app:titleTextAppearance="@style/ToolbarTitleStyle"
         app:titleTextColor="@android:color/white" />
 
@@ -58,11 +59,12 @@
             <!-- Tên sản phẩm -->
 
             <com.google.android.material.textfield.TextInputLayout
+                android:backgroundTint="@color/white"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
-                app:boxStrokeColor="@color/gray"
-                app:hintTextColor="@color/black">
+                app:boxStrokeColor="@color/primary"
+                app:hintTextColor="@color/primary">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/edtProductName"
@@ -79,11 +81,12 @@
             <!-- Mô tả -->
 
             <com.google.android.material.textfield.TextInputLayout
+                android:backgroundTint="@color/white"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                app:boxStrokeColor="@color/gray"
-                app:hintTextColor="@color/black">
+                app:boxStrokeColor="@color/primary"
+                app:hintTextColor="@color/primary">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/edtDescription"
@@ -102,11 +105,12 @@
             <!-- Khối lượng -->
 
             <com.google.android.material.textfield.TextInputLayout
+                android:backgroundTint="@color/white"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                app:boxStrokeColor="@color/gray"
-                app:hintTextColor="@color/black">
+                app:boxStrokeColor="@color/primary"
+                app:hintTextColor="@color/primary">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/edtWeight"
@@ -124,11 +128,12 @@
             <!-- Giá trị -->
 
             <com.google.android.material.textfield.TextInputLayout
+                android:backgroundTint="@color/white"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                app:boxStrokeColor="@color/gray"
-                app:hintTextColor="@color/black">
+                app:boxStrokeColor="@color/primary"
+                app:hintTextColor="@color/primary">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/edtPrice"

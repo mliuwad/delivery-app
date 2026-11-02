@@ -19,7 +19,6 @@ import android.widget.ImageView;
 import android.widget.ScrollView;
 import android.widget.Toast;
 
-import androidx.activity.EdgeToEdge;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
@@ -101,11 +100,12 @@ public class AddEditProductActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        EdgeToEdge.enable(this);
         setContentView(R.layout.activity_add_edit_product);
 
 
         View mainView = findViewById(R.id.main);
+
+        initViews();
 
         ViewCompat.setOnApplyWindowInsetsListener(mainView, (v, insets) -> {
             Insets systemBars = insets.getInsets(
@@ -118,7 +118,7 @@ public class AddEditProductActivity extends AppCompatActivity {
 
             v.setPadding(
                     systemBars.left,
-                    systemBars.top,
+                    0,
                     systemBars.right,
                     0
             );
@@ -156,7 +156,6 @@ public class AddEditProductActivity extends AppCompatActivity {
         productViewModel = new ViewModelProvider(this)
                 .get(ProductViewModel.class);
 
-        initViews();
         setupToolbar();
         setupMode();
         setupListeners();
