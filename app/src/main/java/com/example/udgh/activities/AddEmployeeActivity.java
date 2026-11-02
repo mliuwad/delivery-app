@@ -120,6 +120,34 @@ public class AddEmployeeActivity extends AppCompatActivity {
             }
             public void afterTextChanged(android.text.Editable e) {}
         });
+        wrapInput(name, "Họ và tên");
+        wrapInput(phone, "Số điện thoại");
+        wrapInput(email, "Email");
+        if ("SHIPPER".equals(role)) {
+            wrapInput(citizenId, "CCCD");
+            wrapInput(plate, "Biển số xe");
+            wrapInput(address, "Địa chỉ");
+        }
+        wrapInput(password, "Mật khẩu đăng nhập");
+    }
+
+    private void wrapInput(EditText e, String hint) {
+        LinearLayout parent = (LinearLayout) e.getParent();
+        int index = parent.indexOfChild(e);
+        parent.removeView(e);
+        TextInputLayout box = new TextInputLayout(this);
+        box.setBoxBackgroundMode(TextInputLayout.BOX_BACKGROUND_OUTLINE);
+        box.setBoxBackgroundColor(Color.WHITE);
+        box.setBoxStrokeColor(0xff1565c0);
+        box.setHint(hint);
+        box.setHintTextColor(android.content.res.ColorStateList.valueOf(0xff1565c0));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
+        lp.topMargin = dp(6);
+        lp.bottomMargin = dp(8);
+        parent.addView(box, index, lp);
+        e.setHint(null);
+        e.setBackground(null);
+        box.addView(e, new android.widget.FrameLayout.LayoutParams(-1, -2));
     }
 
     private void styleInput(EditText e) {
