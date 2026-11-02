@@ -98,9 +98,6 @@ dependencies {
     // ✅ Material Design
     implementation("com.google.android.material:material:1.12.0")
 
-    // ✅ Firebase
-    implementation("com.google.firebase:firebase-auth:24.0.1")
-
     // ✅ Glide - Load ảnh
     implementation("com.github.bumptech.glide:glide:4.15.1")
     annotationProcessor("com.github.bumptech.glide:compiler:4.15.1")
