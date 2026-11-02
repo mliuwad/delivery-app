@@ -70,9 +70,9 @@ public class OrderRepository {
             return;
         }
 
-        if ("COMPLETED".equals(requestedStatus)) {
+        if (AppConstants.OrderStatuses.COMPLETED.equals(requestedStatus)) {
             prepareCompletion(orderId, userId, callback);
-        } else if ("CANCELLED".equals(requestedStatus) || "DELIVERING".equals(requestedStatus)) {
+        } else if (AppConstants.OrderStatuses.CANCELLED.equals(requestedStatus) || AppConstants.OrderStatuses.DELIVERING.equals(requestedStatus)) {
             executeOrderAction(orderId, userId, requestedStatus, null, null, callback);
         } else {
             callback.onResult(false, null, new IllegalArgumentException("Trạng thái không hợp lệ"));
@@ -114,7 +114,7 @@ public class OrderRepository {
                                             + String.format(java.util.Locale.US, "%02d", month);
                                     salaryRef = db.collection(AppConstants.Collections.SALARIES).document(salaryId);
                                 }
-                                executeOrderAction(orderId, userId, "COMPLETED",
+                                executeOrderAction(orderId, userId, AppConstants.OrderStatuses.COMPLETED,
                                         completedAt, salaryRef, callback);
                             })
                             .addOnFailureListener(error -> callback.onResult(false, null, error));
@@ -144,36 +144,36 @@ public class OrderRepository {
             String creatorId = order.getString("creatorId");
             String shipperId = order.getString("shipperId");
 
-            if ("CANCELLED".equals(requestedStatus)) {
-                if (!"CREATOR".equals(role) || !userId.equals(creatorId)) {
+            if (AppConstants.OrderStatuses.CANCELLED.equals(requestedStatus)) {
+                if (!AppConstants.Roles.CREATOR.equals(role) || !userId.equals(creatorId)) {
                     throw new IllegalStateException("Bạn không có quyền hủy đơn này");
                 }
-                if (!"PENDING".equals(status) && !"WAITING".equals(status)) {
+                if (!AppConstants.OrderStatuses.PENDING.equals(status) && !AppConstants.OrderStatuses.WAITING.equals(status)) {
                     throw new IllegalStateException("Chỉ có thể hủy đơn khi đơn đang chờ nhận");
                 }
-                transaction.update(orderRef, "status", "CANCELLED");
-                return "CANCELLED";
+                transaction.update(orderRef, "status", AppConstants.OrderStatuses.CANCELLED);
+                return AppConstants.OrderStatuses.CANCELLED;
             }
 
-            if ("DELIVERING".equals(requestedStatus)) {
-                if (!"SHIPPER".equals(role)) {
+            if (AppConstants.OrderStatuses.DELIVERING.equals(requestedStatus)) {
+                if (!AppConstants.Roles.SHIPPER.equals(role)) {
                     throw new IllegalStateException("Tài khoản không có quyền nhận đơn");
                 }
-                if (!"PENDING".equals(status) && !"WAITING".equals(status)) {
+                if (!AppConstants.OrderStatuses.PENDING.equals(status) && !AppConstants.OrderStatuses.WAITING.equals(status)) {
                     throw new IllegalStateException("Đơn hàng không còn chờ nhận");
                 }
                 if (shipperId != null && !shipperId.trim().isEmpty()) {
                     throw new IllegalStateException("Đơn hàng đã có shipper nhận");
                 }
                 Map<String, Object> updates = new HashMap<>();
-                updates.put("status", "DELIVERING");
+                updates.put("status", AppConstants.OrderStatuses.DELIVERING);
                 updates.put("shipperId", userId);
                 transaction.update(orderRef, updates);
-                return "DELIVERING";
+                return AppConstants.OrderStatuses.DELIVERING;
             }
 
-            if (!"SHIPPER".equals(role)
-                    || !"DELIVERING".equals(status)
+            if (!AppConstants.Roles.SHIPPER.equals(role)
+                    || !AppConstants.OrderStatuses.DELIVERING.equals(status)
                     || shipperId == null
                     || !userId.equals(shipperId)) {
                 throw new IllegalStateException("Bạn không có quyền hoàn thành đơn này");
@@ -218,11 +218,11 @@ public class OrderRepository {
             }
 
             Map<String, Object> orderUpdates = new HashMap<>();
-            orderUpdates.put("status", "COMPLETED");
+            orderUpdates.put("status", AppConstants.OrderStatuses.COMPLETED);
             orderUpdates.put("deliveredAt", completedAt);
             orderUpdates.put("salaryAdded", true);
             transaction.update(orderRef, orderUpdates);
-            return "COMPLETED";
+            return AppConstants.OrderStatuses.COMPLETED;
         }).addOnSuccessListener(status ->
                 callback.onResult(true, status, null))
           .addOnFailureListener(error ->
@@ -255,7 +255,7 @@ public class OrderRepository {
             return;
         }
         Object initialStatus = orderData.get("status");
-        if (!"PENDING".equals(initialStatus) && !"WAITING".equals(initialStatus)) {
+        if (!AppConstants.OrderStatuses.PENDING.equals(initialStatus) && !AppConstants.OrderStatuses.WAITING.equals(initialStatus)) {
             callback.onResult(false, null,
                     new IllegalArgumentException("Trạng thái đơn mới không hợp lệ"));
             return;
@@ -335,9 +335,9 @@ public class OrderRepository {
             return;
         }
 
-        if ("PENDING".equals(status)) {
+        if (AppConstants.OrderStatuses.PENDING.equals(status)) {
             db.collection(COLLECTION)
-                    .whereIn("status", java.util.Arrays.asList("PENDING", "WAITING"))
+                    .whereIn("status", java.util.Arrays.asList(AppConstants.OrderStatuses.PENDING, AppConstants.OrderStatuses.WAITING))
                     .get()
                     .addOnSuccessListener(snapshot -> {
                         List<Order> orders = new ArrayList<>();
@@ -382,7 +382,7 @@ public class OrderRepository {
         final AtomicInteger failedQueries = new AtomicInteger(0);
 
         db.collection(COLLECTION)
-                .whereIn("status", java.util.Arrays.asList("PENDING", "WAITING"))
+                .whereIn("status", java.util.Arrays.asList(AppConstants.OrderStatuses.PENDING, AppConstants.OrderStatuses.WAITING))
                 .get()
                 .addOnSuccessListener(snapshot -> {
                     for (QueryDocumentSnapshot doc : snapshot) {
@@ -406,7 +406,7 @@ public class OrderRepository {
                 .addOnSuccessListener(snapshot -> {
                     for (QueryDocumentSnapshot doc : snapshot) {
                         String orderStatus = doc.getString("status");
-                        if (!"PENDING".equals(orderStatus) && !"WAITING".equals(orderStatus)) {
+                        if (!AppConstants.OrderStatuses.PENDING.equals(orderStatus) && !AppConstants.OrderStatuses.WAITING.equals(orderStatus)) {
                             Order order = doc.toObject(Order.class);
                             order.setOrderId(doc.getId());
                             combined.add(order);
@@ -467,8 +467,8 @@ public class OrderRepository {
 
         Query query = db.collection(COLLECTION);
 
-        if ("PENDING".equals(status)) {
-            query = query.whereIn("status", java.util.Arrays.asList("PENDING", "WAITING"));
+        if (AppConstants.OrderStatuses.PENDING.equals(status)) {
+            query = query.whereIn("status", java.util.Arrays.asList(AppConstants.OrderStatuses.PENDING, AppConstants.OrderStatuses.WAITING));
         } else if (status != null && !"ALL".equals(status)) {
             query = query.whereEqualTo("status", status);
         }
