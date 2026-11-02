@@ -3,11 +3,15 @@ package com.example.udgh.activities;
 import android.app.AlertDialog;
 import android.os.Bundle;
 import android.text.InputType;
-import android.text.TextUtils;
 import android.view.View;
 import android.widget.*;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.SearchView;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.example.udgh.R;
+import com.example.udgh.models.User;
 import com.example.udgh.utils.RoleAccess;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.Timestamp;
@@ -19,51 +23,133 @@ import java.util.*;
 
 public class CreatorManagementActivity extends AppCompatActivity {
     private final FirebaseFirestore db = FirebaseFirestore.getInstance();
-    private LinearLayout list;
-    private ProgressBar loading;
-    private EditText search;
-    private final List<com.example.udgh.models.User> creators = new ArrayList<>();
+    private final List<User> creators = new ArrayList<>();
+    private final List<User> filtered = new ArrayList<>();
+    private SwipeRefreshLayout refresh;
+    private SearchView searchView;
+    private TextView total;
+    private RecyclerView.Adapter<CreatorRow> adapter;
+    private boolean initialized;
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
+        setContentView(R.layout.activity_creator_management);
         RoleAccess.requireRole(this, "ADMIN", this::init);
     }
 
     private void init() {
-        LinearLayout root = new LinearLayout(this);
-        root.setOrientation(LinearLayout.VERTICAL);
-        root.setBackgroundColor(getColor(R.color.background));
-        MaterialToolbar bar = new MaterialToolbar(this);
-        bar.setBackgroundColor(getColor(R.color.primary));
-        bar.setTitleTextColor(getColor(R.color.white));
-        bar.setTitle("Nhân viên tạo đơn");
-        bar.setNavigationIcon(R.drawable.sgv_back);
+        if (initialized) return;
+        initialized = true;
+        MaterialToolbar bar = findViewById(R.id.toolbar);
         bar.setNavigationOnClickListener(v -> finish());
-        root.addView(bar, new LinearLayout.LayoutParams(-1, dp(56)));
-        search = new EditText(this);
-        search.setSingleLine(true);
-        search.setHint("Tìm theo tên, email, số điện thoại");
-        search.setPadding(dp(16), 0, dp(16), 0);
-        root.addView(search, new LinearLayout.LayoutParams(-1, dp(54)));
-        Button add = new Button(this);
-        add.setText("Thêm nhân viên tạo đơn");
-        root.addView(add);
-        loading = new ProgressBar(this);
-        root.addView(loading);
-        ScrollView scroll = new ScrollView(this);
-        list = new LinearLayout(this);
-        list.setOrientation(LinearLayout.VERTICAL);
-        list.setPadding(dp(12), dp(8), dp(12), dp(16));
-        scroll.addView(list);
-        root.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1));
-        setContentView(root);
-        search.addTextChangedListener(new android.text.TextWatcher() {
-            public void beforeTextChanged(CharSequence s,int st,int count,int after) {}
-            public void onTextChanged(CharSequence s,int st,int before,int count) { render(); }
-            public void afterTextChanged(android.text.Editable e) {}
+        bar.setOnMenuItemClickListener(item -> {
+            if (item.getItemId() == R.id.action_add) { showCreate(); return true; }
+            return false;
         });
-        add.setOnClickListener(v -> showCreate());
+        searchView = findViewById(R.id.searchView);
+        total = findViewById(R.id.txtTotal);
+        refresh = findViewById(R.id.swipeRefreshLayout);
+        refresh.setColorSchemeResources(R.color.primary);
+        refresh.setOnRefreshListener(this::load);
+        RecyclerView list = findViewById(R.id.rvCreator);
+        list.setLayoutManager(new LinearLayoutManager(this));
+        adapter = new RecyclerView.Adapter<CreatorRow>() {
+            @Override public CreatorRow onCreateViewHolder(android.view.ViewGroup parent, int type) {
+                return new CreatorRow(getLayoutInflater().inflate(R.layout.item_shipper, parent, false));
+            }
+            @Override public void onBindViewHolder(CreatorRow h, int position) {
+                User user = filtered.get(position);
+                h.name.setText(user.getFullName());
+                h.phone.setText("SĐT: " + user.getPhone());
+                h.email.setText("Email: " + user.getEmail());
+                boolean active = "ACTIVE".equalsIgnoreCase(user.getStatus());
+                h.status.setText(active ? "Hoạt động" : "Khóa");
+                h.status.setTextColor(getColor(active ? android.R.color.holo_green_dark : android.R.color.holo_red_dark));
+                h.avatar.setImageResource(R.drawable.delivery_man);
+                if (user.getAvatarUrl() != null && !user.getAvatarUrl().isEmpty())
+                    com.bumptech.glide.Glide.with(CreatorManagementActivity.this)
+                        .load(user.getAvatarUrl()).circleCrop().placeholder(R.drawable.delivery_man).into(h.avatar);
+                h.itemView.setOnClickListener(v -> showDetails(user));
+                h.edit.setOnClickListener(v -> showEdit(user));
+                h.lock.setOnClickListener(v -> toggle(user));
+            }
+            @Override public int getItemCount() { return filtered.size(); }
+        };
+        list.setAdapter(adapter);
+        searchView.setIconifiedByDefault(false);
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override public boolean onQueryTextSubmit(String query) { render(); return true; }
+            @Override public boolean onQueryTextChange(String query) { render(); return true; }
+        });
         load();
+    }
+
+    static class CreatorRow extends RecyclerView.ViewHolder {
+        TextView name, phone, email, status;
+        ImageView avatar;
+        ImageButton edit, lock;
+        CreatorRow(View item) {
+            super(item);
+            name=item.findViewById(R.id.txtName);
+            phone=item.findViewById(R.id.txtPhone);
+            email=item.findViewById(R.id.txtEmail);
+            status=item.findViewById(R.id.txtStatus);
+            avatar=item.findViewById(R.id.imgAvatar);
+            edit=item.findViewById(R.id.btnEdit);
+            lock=item.findViewById(R.id.btnLock);
+        }
+    }
+
+    private void load() {
+        if (!initialized) return;
+        refresh.setRefreshing(true);
+        db.collection("USERS").whereEqualTo("role", "CREATOR").get()
+            .addOnSuccessListener(snapshot -> {
+                creators.clear();
+                for (QueryDocumentSnapshot doc : snapshot) {
+                    User user = doc.toObject(User.class);
+                    user.setUserId(doc.getId());
+                    creators.add(user);
+                }
+                refresh.setRefreshing(false);
+                render();
+            })
+            .addOnFailureListener(error -> {
+                refresh.setRefreshing(false);
+                Toast.makeText(this, "Không tải được danh sách: " + error.getMessage(), Toast.LENGTH_LONG).show();
+            });
+    }
+
+    private void render() {
+        if (!initialized) return;
+        String query = searchView.getQuery().toString().trim().toLowerCase(Locale.ROOT);
+        filtered.clear();
+        for (User u : creators) {
+            String haystack = (String.valueOf(u.getFullName())+" "+String.valueOf(u.getEmail())+" "+String.valueOf(u.getPhone())).toLowerCase(Locale.ROOT);
+            if (haystack.contains(query)) filtered.add(u);
+        }
+        total.setText("Tổng số nhân viên: " + filtered.size());
+        adapter.notifyDataSetChanged();
+    }
+
+    private void showDetails(User u) {
+        new AlertDialog.Builder(this).setTitle("Chi tiết nhân viên tạo đơn")
+            .setMessage("Họ tên: "+u.getFullName()+"\nEmail: "+u.getEmail()
+                +"\nSĐT: "+u.getPhone()+"\nTrạng thái: "+u.getStatus())
+            .setNegativeButton("Đóng",null)
+            .setPositiveButton("Chỉnh sửa",(d,w)->showEdit(u)).show();
+    }
+
+    private void toggle(User u) {
+        boolean active = "ACTIVE".equalsIgnoreCase(u.getStatus());
+        new AlertDialog.Builder(this)
+            .setMessage(active ? "Khóa tài khoản này?" : "Mở khóa tài khoản này?")
+            .setNegativeButton("Hủy",null)
+            .setPositiveButton("Xác nhận",(d,w)->db.collection("USERS").document(u.getUserId())
+                .update("status",active ? "INACTIVE":"ACTIVE")
+                .addOnSuccessListener(x->load())
+                .addOnFailureListener(e->Toast.makeText(this,e.getMessage(),Toast.LENGTH_LONG).show()))
+            .show();
     }
 
     private int dp(int n) { return (int)(n * getResources().getDisplayMetrics().density); }
@@ -73,65 +159,9 @@ public class CreatorManagementActivity extends AppCompatActivity {
         input.setInputType(type);
         return input;
     }
-    private void load() {
-        loading.setVisibility(View.VISIBLE);
-        db.collection("USERS").whereEqualTo("role","CREATOR").get()
-          .addOnSuccessListener(s -> {
-              creators.clear();
-              for (QueryDocumentSnapshot d : s) {
-                  com.example.udgh.models.User u = d.toObject(com.example.udgh.models.User.class);
-                  u.setUserId(d.getId());
-                  creators.add(u);
-              }
-              loading.setVisibility(View.GONE);
-              render();
-          }).addOnFailureListener(e -> {
-              loading.setVisibility(View.GONE);
-              Toast.makeText(this,"Không tải được danh sách: "+e.getMessage(),Toast.LENGTH_LONG).show();
-          });
-    }
-    private void render() {
-        if (list == null) return;
-        list.removeAllViews();
-        String q = search.getText().toString().toLowerCase(Locale.ROOT).trim();
-        int shown = 0;
-        for (com.example.udgh.models.User u : creators) {
-            String text = (String.valueOf(u.getFullName())+" "+String.valueOf(u.getEmail())+" "+String.valueOf(u.getPhone())).toLowerCase(Locale.ROOT);
-            if (!text.contains(q)) continue;
-            shown++;
-            LinearLayout box = new LinearLayout(this);
-            box.setOrientation(LinearLayout.VERTICAL);
-            box.setPadding(dp(14),dp(12),dp(14),dp(12));
-            box.setBackgroundColor(getColor(R.color.white));
-            TextView label = new TextView(this);
-            label.setText(String.valueOf(u.getFullName())+"\n"+String.valueOf(u.getEmail())+"\n"+String.valueOf(u.getPhone())+" · "+String.valueOf(u.getStatus()));
-            label.setTextColor(getColor(R.color.black));
-            label.setTextSize(16);
-            box.addView(label);
-            Button edit = new Button(this);
-            edit.setText("Sửa thông tin");
-            edit.setOnClickListener(v -> showEdit(u));
-            box.addView(edit);
-            Button toggle = new Button(this);
-            boolean active = "ACTIVE".equalsIgnoreCase(u.getStatus());
-            toggle.setText(active ? "Khóa tài khoản" : "Mở khóa");
-            toggle.setOnClickListener(v -> new AlertDialog.Builder(this)
-                .setMessage(active ? "Khóa tài khoản này?" : "Mở khóa tài khoản này?")
-                .setNegativeButton("Hủy",null)
-                .setPositiveButton("Xác nhận",(d,w) -> db.collection("USERS").document(u.getUserId())
-                    .update("status",active ? "INACTIVE":"ACTIVE")
-                    .addOnSuccessListener(x -> load())
-                    .addOnFailureListener(e -> Toast.makeText(this,e.getMessage(),Toast.LENGTH_LONG).show())).show());
-            box.addView(toggle);
-            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1,-2);
-            lp.bottomMargin=dp(10);
-            list.addView(box,lp);
-        }
-        if (shown == 0) {
-            TextView empty = new TextView(this);
-            empty.setText("Không có nhân viên phù hợp");
-            list.addView(empty);
-        }
+    @Override protected void onResume() {
+        super.onResume();
+        if (initialized) load();
     }
     private void showEdit(com.example.udgh.models.User u) {
         LinearLayout form = new LinearLayout(this);
