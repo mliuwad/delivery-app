@@ -63,6 +63,13 @@ public class OrderRepository {
             return;
         }
 
+        String signedInUid = com.google.firebase.auth.FirebaseAuth.getInstance().getUid();
+        if (signedInUid == null || !signedInUid.equals(userId)) {
+            callback.onResult(false, null,
+                    new SecurityException("Tài khoản đang đăng nhập không khớp"));
+            return;
+        }
+
         if ("COMPLETED".equals(requestedStatus)) {
             prepareCompletion(orderId, userId, callback);
         } else if ("CANCELLED".equals(requestedStatus) || "DELIVERING".equals(requestedStatus)) {
