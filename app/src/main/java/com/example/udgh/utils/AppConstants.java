@@ -20,6 +20,12 @@ public final class AppConstants {
         public static final String SHIPPER = "SHIPPER";
     }
 
+    public static final class AccountStatus {
+        private AccountStatus() {}
+        public static final String ACTIVE = "ACTIVE";
+        public static final String INACTIVE = "INACTIVE";
+    }
+
     public static final class OrderStatuses {
         private OrderStatuses() {}
         public static final String PENDING = "PENDING";
