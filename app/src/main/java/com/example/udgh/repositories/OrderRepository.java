@@ -399,8 +399,10 @@ public class OrderRepository {
                                       ResultCallback<List<Order>> callback) {
         if (completedQueries.incrementAndGet() != 2) return;
 
-        if (orders.isEmpty() && failedQueries.get() > 0) {
-            callback.onError(new IllegalStateException("Không thể tải danh sách đơn hàng"));
+        // Không trả danh sách thiếu dữ liệu nếu một trong hai truy vấn thất bại.
+        // Ví dụ: lỗi tải đơn đã nhận có thể làm shipper tưởng chỉ còn đơn chờ.
+        if (failedQueries.get() > 0) {
+            callback.onError(new IllegalStateException("Không thể tải đầy đủ danh sách đơn hàng"));
             return;
         }
 
