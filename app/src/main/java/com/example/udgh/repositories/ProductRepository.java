@@ -119,47 +119,24 @@ public class ProductRepository {
             return;
         }
 
-        db.collection(COLLECTION)
-                .get()
-                .addOnSuccessListener(snapshot -> {
+        // Firestore tự tạo ID duy nhất; không cần đọc toàn bộ PRODUCTS.
+        com.google.firebase.firestore.DocumentReference newProductRef =
+                db.collection(COLLECTION).document();
+        String newId = newProductRef.getId();
 
-                    int maxNumber = 0;
+        Map<String, Object> data = new HashMap<>();
+        data.put("productId", newId);
+        data.put("productName", product.getProductName());
+        data.put("description", product.getDescription());
+        data.put("weight", product.getWeight());
+        data.put("price", product.getPrice());
+        data.put("createdBy", uid);
+        data.put("createdAt", Timestamp.now());
+        data.put("imageUrl", product.getImageUrl());
+        data.put("isActive", true);
 
-                    for (QueryDocumentSnapshot document : snapshot) {
-
-                        String id = document.getId();
-
-                        if (id != null && id.startsWith("P")) {
-                            try {
-                                int number = Integer.parseInt(id.substring(1));
-                                maxNumber = Math.max(maxNumber, number);
-                            } catch (NumberFormatException ignored) {
-                            }
-                        }
-                    }
-
-                    String newId = "P" + String.format(
-                            Locale.ROOT, "%03d", maxNumber + 1
-                    );
-
-                    Map<String, Object> data = new HashMap<>();
-
-                    data.put("productName", product.getProductName());
-                    data.put("description", product.getDescription());
-                    data.put("weight", product.getWeight());
-                    data.put("price", product.getPrice());
-                    data.put("createdBy", product.getCreatedBy());
-                    data.put("createdAt", Timestamp.now());
-                    data.put("imageUrl", product.getImageUrl());
-                    data.put("isActive", true);
-
-                    db.collection(COLLECTION)
-                            .document(newId)
-                            .set(data)
-                            .addOnSuccessListener(unused ->
-                                    callback.onSuccess(newId))
-                            .addOnFailureListener(callback::onError);
-                })
+        newProductRef.set(data)
+                .addOnSuccessListener(unused -> callback.onSuccess(newId))
                 .addOnFailureListener(callback::onError);
     }
 
