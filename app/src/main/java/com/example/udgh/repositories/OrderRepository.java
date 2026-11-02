@@ -2,6 +2,7 @@
 package com.example.udgh.repositories;
 
 import com.example.udgh.models.Order;
+import com.example.udgh.utils.AppConstants;
 import com.example.udgh.models.OrderDetail;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
@@ -18,7 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class OrderRepository {
 
     private final FirebaseFirestore db;
-    private static final String COLLECTION = "ORDERS";
+    private static final String COLLECTION = AppConstants.Collections.ORDERS;
 
     public interface ResultCallback<T> {
         void onSuccess(T result);
@@ -44,7 +45,7 @@ public class OrderRepository {
             return;
         }
 
-        db.collection("USERS").document(userId).get()
+        db.collection(AppConstants.Collections.USERS).document(userId).get()
                 .addOnSuccessListener(snapshot -> {
                     String role = snapshot.exists() ? snapshot.getString("role") : null;
                     callback.onResult(role == null ? null : role.trim().toUpperCase(Locale.ROOT),
@@ -91,7 +92,7 @@ public class OrderRepository {
                     int month = calendar.get(java.util.Calendar.MONTH) + 1;
                     int year = calendar.get(java.util.Calendar.YEAR);
 
-                    db.collection("SALARIES")
+                    db.collection(AppConstants.Collections.SALARIES)
                             .whereEqualTo("shipperID", shipperId)
                             .whereEqualTo("month", month)
                             .whereEqualTo("year", year)
@@ -104,7 +105,7 @@ public class OrderRepository {
                                 } else {
                                     String salaryId = "SL_" + shipperId + "_" + year
                                             + String.format(java.util.Locale.US, "%02d", month);
-                                    salaryRef = db.collection("SALARIES").document(salaryId);
+                                    salaryRef = db.collection(AppConstants.Collections.SALARIES).document(salaryId);
                                 }
                                 executeOrderAction(orderId, userId, "COMPLETED",
                                         completedAt, salaryRef, callback);
@@ -121,7 +122,7 @@ public class OrderRepository {
         com.google.firebase.firestore.DocumentReference orderRef =
                 db.collection(COLLECTION).document(orderId);
         com.google.firebase.firestore.DocumentReference userRef =
-                db.collection("USERS").document(userId);
+                db.collection(AppConstants.Collections.USERS).document(userId);
 
         db.runTransaction(transaction -> {
             com.google.firebase.firestore.DocumentSnapshot user = transaction.get(userRef);
@@ -255,8 +256,8 @@ public class OrderRepository {
             detailData.put("quantity", detail.getQuantity());
             detailData.put("imageUrl", detail.getImageUrl() != null ? detail.getImageUrl() : "");
 
-            String detailId = orderRef.collection("ORDER_DETAILS").document().getId();
-            batch.set(orderRef.collection("ORDER_DETAILS").document(detailId), detailData);
+            String detailId = orderRef.collection(AppConstants.Collections.ORDER_DETAILS).document().getId();
+            batch.set(orderRef.collection(AppConstants.Collections.ORDER_DETAILS).document(detailId), detailData);
         }
 
         batch.commit()
@@ -282,7 +283,7 @@ public class OrderRepository {
                         return;
                     }
                     order.setOrderId(document.getId());
-                    document.getReference().collection("ORDER_DETAILS").get()
+                    document.getReference().collection(AppConstants.Collections.ORDER_DETAILS).get()
                             .addOnSuccessListener(snapshot -> {
                                 List<OrderDetail> details = new ArrayList<>();
                                 for (QueryDocumentSnapshot detailDoc : snapshot) {
@@ -478,7 +479,7 @@ public class OrderRepository {
 
             db.collection(COLLECTION)
                     .document(order.getOrderId())
-                    .collection("ORDER_DETAILS")
+                    .collection(AppConstants.Collections.ORDER_DETAILS)
                     .get()
                     .addOnSuccessListener(snapshot -> {
 
