@@ -60,7 +60,6 @@
         <activity
             android:name=".activities.HomeShipperActivity"
             android:windowSoftInputMode="adjustNothing"
-            android:windowSoftInputMode="adjustNothing"
             android:exported="false" />
         <activity
             android:name=".activities.ListOrderActitvity"
@@ -70,7 +69,6 @@
             android:exported="false" />
         <activity
             android:name=".activities.HomeCreatorActivity"
-            android:windowSoftInputMode="adjustNothing"
             android:windowSoftInputMode="adjustNothing"
             android:exported="false" />
         <activity
