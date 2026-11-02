@@ -1,0 +1,86 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+    function profile() {
+      return get(/databases/$(database)/documents/USERS/$(request.auth.uid));
+    }
+    function active() {
+      return signedIn() && profile().data.status == "ACTIVE";
+    }
+    function role(name) {
+      return active() && profile().data.role == name;
+    }
+    function admin() {
+      return role("ADMIN");
+    }
+    function own(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    match /USERS/{uid} {
+      // Admin can manage existing profiles, but cannot create new Auth users.
+      // New accounts and initial profiles are provisioned in Firebase Console.
+      allow get: if own(uid) || admin();
+      allow list: if admin();
+      allow create, delete: if false;
+      allow update: if admin()
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.email == resource.data.email
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(["fullName", "phone", "status", "avatarUrl"]);
+
+      match /SHIPPER_DETAILS/{detailId} {
+        allow read: if admin() || (own(uid) && role("SHIPPER"));
+        allow write: if false;
+      }
+    }
+
+    match /PRODUCTS/{productId} {
+      allow read: if active();
+      allow create, update, delete: if admin();
+    }
+
+    match /ORDERS/{orderId} {
+      allow read: if admin()
+        || (role("CREATOR") && resource.data.creatorId == request.auth.uid)
+        || (role("SHIPPER") && (
+          resource.data.shipperId == request.auth.uid ||
+          ((resource.data.status in ["PENDING", "WAITING"])
+            && resource.data.shipperId == "")
+        ));
+      allow create: if role("CREATOR")
+        && request.resource.data.creatorId == request.auth.uid
+        && request.resource.data.status in ["PENDING", "WAITING"]
+        && request.resource.data.shipperId == "";
+      // Status transitions and salary updates must be reviewed together before
+      // enabling writes from mobile clients.
+      allow update, delete: if false;
+
+      match /ORDER_DETAILS/{detailId} {
+        allow read: if admin() || (
+          signedIn() && exists(/databases/$(database)/documents/ORDERS/$(orderId))
+          && (
+            (role("CREATOR") && get(/databases/$(database)/documents/ORDERS/$(orderId)).data.creatorId == request.auth.uid)
+            || (role("SHIPPER") && get(/databases/$(database)/documents/ORDERS/$(orderId)).data.shipperId == request.auth.uid)
+          )
+        );
+        allow create: if role("CREATOR")
+          && getAfter(/databases/$(database)/documents/ORDERS/$(orderId)).data.creatorId == request.auth.uid;
+        allow update, delete: if false;
+      }
+    }
+
+    match /SALARIES/{salaryId} {
+      allow read: if admin() || (role("SHIPPER") && resource.data.shipperID == request.auth.uid);
+      allow write: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
