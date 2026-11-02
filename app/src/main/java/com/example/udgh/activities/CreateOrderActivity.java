@@ -756,6 +756,7 @@ public class CreateOrderActivity extends AppCompatActivity {
         orderData.put("codAmount", codAmount);
         orderData.put("totalProductValue", totalProductPrice);
         orderData.put("itemCount", selectedProductList.size());
+        orderData.put("productPreviewName", selectedProductList.get(0).getProductName());
         orderData.put("totalQuantity", selectedProductList.stream().mapToInt(OrderDetail::getQuantity).sum());
         orderData.put("totalAmount", totalToPay);
         orderData.put("status", "PENDING");
