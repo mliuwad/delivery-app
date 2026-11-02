@@ -657,9 +657,10 @@ public class CreateOrderActivity extends AppCompatActivity {
         return phone.matches(phonePattern);
     }
 
-    // Tạo mã đơn duy nhất theo thời điểm, không cần đọc toàn bộ danh sách ORDERS.
+    // Firestore tự sinh ID ngẫu nhiên, tránh trùng mã khi nhiều thiết bị tạo đơn cùng lúc.
     private void generateOrderId() {
-        String newOrderId = "OD" + System.currentTimeMillis();
+        String newOrderId = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                .collection("ORDERS").document().getId();
         createOrderWithId(newOrderId);
     }
 
