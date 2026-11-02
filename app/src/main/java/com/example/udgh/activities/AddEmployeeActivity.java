@@ -147,7 +147,7 @@ public class AddEmployeeActivity extends AppCompatActivity {
         parent.addView(box, index, lp);
         e.setHint(null);
         e.setBackground(null);
-        box.addView(e, new android.widget.FrameLayout.LayoutParams(-1, -2));
+        box.addView(e, new LinearLayout.LayoutParams(-1, -2));
     }
 
     private void styleInput(EditText e) {
