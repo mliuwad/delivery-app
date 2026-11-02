@@ -19,6 +19,7 @@
         android:usesCleartextTraffic="true"
         tools:replace="android:allowBackup"
         tools:targetApi="31">
+        <activity android:name=".activities.AddEmployeeActivity" android:exported="false" />
         <activity android:name=".activities.CreatorManagementActivity" android:exported="false" />
         <activity android:name=".activities.CreatorDetailActivity" android:exported="false" />
         <activity
