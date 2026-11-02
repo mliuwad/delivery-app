@@ -28,7 +28,7 @@ service cloud.firestore {
       return admin()
         || (creator() && order.creatorId == request.auth.uid)
         || assignedToMe(order)
-        || pendingAvailable(order);
+        || (shipper() && pending(order.status));
     }
     function orderChangedOnly(fields) {
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly(fields);
