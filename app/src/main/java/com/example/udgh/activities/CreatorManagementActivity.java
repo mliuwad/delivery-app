@@ -191,27 +191,18 @@ public class CreatorManagementActivity extends AppCompatActivity {
                 Toast.makeText(this,"Kiểm tra lại tên, SĐT, email và mật khẩu",Toast.LENGTH_LONG).show();return;
             }
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
-            FirebaseApp app=FirebaseApp.initializeApp(getApplicationContext(),FirebaseApp.getInstance().getOptions(),"creator-"+UUID.randomUUID());
-            FirebaseAuth secondary=FirebaseAuth.getInstance(app);
-            secondary.createUserWithEmailAndPassword(e,pw).addOnSuccessListener(auth->{
-                String uid=auth.getUser().getUid();
-                Map<String,Object> data=new HashMap<>();
-                data.put("fullName",n);data.put("phone",p);data.put("email",e);
-                data.put("role","CREATOR");data.put("status","ACTIVE");
-                data.put("avatarUrl","");data.put("createdAt",Timestamp.now());
-                // Ghi bằng phiên Admin chính, không đổi session Admin.
-                db.collection("USERS").document(uid).set(data).addOnSuccessListener(z->{
-                    secondary.signOut();app.delete();dialog.dismiss();load();
-                }).addOnFailureListener(err->auth.getUser().delete().addOnCompleteListener(z->{
-                    secondary.signOut();app.delete();
+            Map<String,Object> payload=new HashMap<>();
+            payload.put("fullName",n);
+            payload.put("phone",p);
+            payload.put("email",e);
+            payload.put("password",pw);
+            com.google.firebase.functions.FirebaseFunctions.getInstance()
+                .getHttpsCallable("createCreator").call(payload)
+                .addOnSuccessListener(result->{dialog.dismiss();load();})
+                .addOnFailureListener(err->{
                     dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true);
-                    Toast.makeText(this,"Không lưu được Creator: "+err.getMessage(),Toast.LENGTH_LONG).show();
-                }));
-            }).addOnFailureListener(err->{
-                secondary.signOut();app.delete();
-                dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true);
-                Toast.makeText(this,"Không tạo được tài khoản: "+err.getMessage(),Toast.LENGTH_LONG).show();
-            });
+                    Toast.makeText(this,"Không tạo được Creator: "+err.getMessage(),Toast.LENGTH_LONG).show();
+                });
         }));
         dialog.show();
     }
