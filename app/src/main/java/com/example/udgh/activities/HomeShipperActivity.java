@@ -13,7 +13,6 @@ import android.os.Build;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import android.content.pm.PackageManager;
-import com.example.udgh.services.PushTokenManager;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
@@ -86,7 +85,7 @@ public class HomeShipperActivity extends AppCompatActivity {
             invalidateOptionsMenu();
         });
         avatarViewModel.loadAvatar(userId);
-        PushTokenManager.sync();
+
         if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(this,
                 Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this,
@@ -168,7 +167,7 @@ public class HomeShipperActivity extends AppCompatActivity {
     }
 
     private void logout() {
-        PushTokenManager.clear();
+
         sessionViewModel.signOut();
         getSharedPreferences("MyAppPrefs", MODE_PRIVATE).edit().clear().apply();
         Intent intent = new Intent(this, LoginActivity.class);
