@@ -44,7 +44,6 @@ public class LocationPickerActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
         setContentView(R.layout.activity_location_picker);
         locationViewModel = new ViewModelProvider(this).get(LocationViewModel.class);
         observeLocationViewModel();
