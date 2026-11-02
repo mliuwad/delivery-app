@@ -67,7 +67,9 @@ public class LoginActivity extends AppCompatActivity {
                 return;
             }
 
-            startActivity(new Intent(this, destination));
+            Intent next = new Intent(this, destination);
+            next.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(next);
             finish();
         });
 
