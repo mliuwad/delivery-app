@@ -28,7 +28,7 @@ exports.createShipper = onCall(async (request) => {
   try {
     created = await auth.createUser({
       email: input.email.trim(), password: input.password,
-      displayName: input.fullName.trim(), disabled: input.status !== "ACTIVE"
+      displayName: input.fullName.trim()
     });
     const uid = created.uid;
     const ref = db.collection("USERS").doc(uid);
