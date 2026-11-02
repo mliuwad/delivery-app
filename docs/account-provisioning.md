@@ -1,43 +1,33 @@
-# Account provisioning and rollout
+# Account setup without Cloud Functions
 
-## Policy
-Public self-registration is disabled for all roles. Existing Admin accounts must be provisioned out of band by a trusted project owner. The Android login screen hides the registration link and RegistrationRepository refuses self-registration.
+This CV/demo application uses Firebase Authentication and Cloud Firestore on the client, with **no Cloud Functions dependency**. Public self-registration and in-app account provisioning are disabled.
 
-## Creator and Shipper creation
-The Admin UI calls the Firebase callable functions `createCreator` and `createShipper` using the signed-in Admin session. The function checks `USERS/{callerUid}` for `role == ADMIN` and `status == ACTIVE`, creates an Auth user via Admin SDK, then batch-writes `USERS/{uid}` and `USERS/{uid}/SHIPPER_DETAILS/{uid}`. It attempts to remove the Auth user if profile creation fails.
+## Add an account manually (project administrator only)
 
-## Deployment prerequisites
-1. Confirm the correct Firebase project, billing requirements, and IAM access.
-2. Install function dependencies in `functions/` and deploy `createCreator,createShipper` to a **test project** first.
-3. Confirm Android and Functions use the same Firebase project and region.
-4. Test successful creation by active Admin and denial for inactive Admin, Creator, Shipper, and unauthenticated users.
-5. Verify duplicate email and invalid data errors; verify failed creation does not leave an orphaned user.
-6. Design and test Firestore Rules with the Emulator before production deployment. Never allow arbitrary clients to write `role` or `status` on `USERS`.
+1. Open the Firebase Console for the correct project.
+2. In **Authentication > Users**, add a user with email and password. Copy the generated **UID**.
+3. In **Firestore Database**, create a document in collection `USERS` with **document ID exactly equal to that UID**.
+4. Add these fields using the appropriate Firestore types:
+   - `fullName`: string
+   - `email`: string (same email as Auth)
+   - `phone`: string
+   - `role`: string, exactly `ADMIN`, `CREATOR`, or `SHIPPER`
+   - `status`: string, exactly `ACTIVE`
+   - `avatarUrl`: string (empty is fine)
+   - `createdAt`: timestamp
+5. For Shippers, also create `USERS/{uid}/SHIPPER_DETAILS/{uid}` with fields `shipperId` (string UID), `citizenId` (string), `licensePlate` (string), `address` (string), and `joinDate` (timestamp).
+6. Log in using the email and password in the Android app.
 
-## Remaining work
-- Admin-only Creator provisioning is implemented in code but has not been deployed or verified. Public registration remains disabled.
-- Existing admin account provisioning and recovery must be defined before onboarding new installations.
-- Firebase Functions, Android build, and Emulator tests have not been executed in this repository change.
-- Review sensitive identity data in `SHIPPER_DETAILS`; minimize retention and enforce access controls.
-- Revoke the old ImgBB API key in the ImgBB dashboard; removing it from Git history alone does not revoke it.
+Never store passwords in Firestore. Never commit credentials or personal identity details to GitHub.
 
-## Commands for test deployment (from project root)
+## Security warning
 
-```powershell
-cd functions
-npm install
-cd ..
-firebase use <YOUR_TEST_PROJECT_ID>
-firebase deploy --only functions:createCreator,functions:createShipper
-```
+**Hiding the registration screen does not secure Firestore.** Firestore Security Rules must enforce that clients cannot create or change privileged roles or statuses. Existing Firebase Rules must be audited and tested with the Firebase Emulator before the app is used with real user data. Firebase Console administrative changes bypass client Rules.
 
-**Do not deploy untested Firestore Rules.** The callable functions use Firebase Admin SDK, which bypasses Firestore Rules. Android clients still require tested, role-based rules for their direct reads/writes. Use a test Firebase project, not production, for initial verification.
+This setup is intended for a controlled demonstration with test accounts. Do not use real citizen IDs or other sensitive personal data in demo records.
 
-## Smoke test after deploying functions
+## Known limitations
 
-1. Login as an existing active Admin and create one Creator and one Shipper.
-2. Verify both profiles appear in `USERS` with correct role and status; verify Shipper details exist.
-3. Login with each newly created account and check the correct home screen.
-4. Attempt account creation while signed in as Creator or Shipper; expect permission denied.
-5. Lock a Shipper in the Admin UI and verify login is denied by application role/status checks; unlock and verify access returns.
-6. Check Firebase logs for errors without printing passwords or identity numbers.
+- Creating accounts is done manually in Firebase Console, not in the Android app.
+- Android build and end-to-end login tests still need to be run locally.
+- Old ImgBB API keys must be revoked separately in the ImgBB dashboard.
