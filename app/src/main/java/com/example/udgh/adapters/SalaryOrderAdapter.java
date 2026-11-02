@@ -42,6 +42,10 @@ public class SalaryOrderAdapter extends RecyclerView.Adapter<SalaryOrderAdapter.
             String name = details.get(0).getProductName();
             if (details.size() > 1) name += " (+" + (details.size() - 1) + " sản phẩm khác)";
             holder.txtProductName.setText(name);
+        } else if (order.getProductPreviewName() != null && !order.getProductPreviewName().isEmpty()) {
+            String preview = order.getProductPreviewName();
+            if (order.getItemCount() > 1) preview += " (+" + (order.getItemCount() - 1) + " sản phẩm khác)";
+            holder.txtProductName.setText(preview);
         } else holder.txtProductName.setText("Chưa có thông tin sản phẩm");
         if (order.getDeliveredAt() != null) {
             holder.txtCompletedDate.setText("Hoàn thành: " + new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(order.getDeliveredAt().toDate()));
