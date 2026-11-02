@@ -25,7 +25,13 @@ service cloud.firestore {
       // New accounts and initial profiles are provisioned in Firebase Console.
       allow get: if own(uid) || admin();
       allow list: if admin();
-      allow create, delete: if false;
+      allow create: if admin() && uid != request.auth.uid
+        && request.resource.data.keys().hasAll(["role", "status", "email", "fullName", "phone", "createdAt"])
+        && request.resource.data.keys().hasOnly(["role", "status", "email", "fullName", "phone", "createdAt", "avatarUrl"])
+        && request.resource.data.role in ["CREATOR", "SHIPPER"]
+        && request.resource.data.status == "ACTIVE"
+        && request.resource.data.email is string;
+      allow delete: if false;
       allow update: if admin()
         && request.resource.data.role == resource.data.role
         && request.resource.data.email == resource.data.email
@@ -35,7 +41,10 @@ service cloud.firestore {
 
       match /SHIPPER_DETAILS/{detailId} {
         allow read: if admin() || (own(uid) && role("SHIPPER"));
-        allow write: if false;
+        allow create: if admin() && detailId == uid
+          && getAfter(/databases/$(database)/documents/USERS/$(uid)).data.role == "SHIPPER"
+          && request.resource.data.shipperId == uid;
+        allow update, delete: if false;
       }
     }
 
