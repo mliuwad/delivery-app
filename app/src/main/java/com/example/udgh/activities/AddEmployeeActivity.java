@@ -76,9 +76,6 @@ public class AddEmployeeActivity extends AppCompatActivity {
         phone = findViewById(R.id.txtPhone);
         email = findViewById(R.id.txtEmail);
         name.setText(""); phone.setText(""); email.setText("");
-        name.setHint("Nhập họ và tên");
-        phone.setHint("Nhập số điện thoại");
-        email.setHint("Email đăng nhập");
         for (EditText e : new EditText[]{name, phone, email}) {
             e.setEnabled(true);
             styleInput(e);
@@ -107,7 +104,6 @@ public class AddEmployeeActivity extends AppCompatActivity {
         passwordLabel.setTextColor(Color.BLACK);
         passwordLabel.setTypeface(null, android.graphics.Typeface.BOLD);
         password = new EditText(this);
-        password.setHint("Tối thiểu 6 ký tự");
         password.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
         styleInput(password);
         int insertAt = card.indexOfChild(email) + 1;
@@ -120,6 +116,15 @@ public class AddEmployeeActivity extends AppCompatActivity {
             }
             public void afterTextChanged(android.text.Editable e) {}
         });
+        hidePreviousLabel(name);
+        hidePreviousLabel(phone);
+        hidePreviousLabel(email);
+        if ("SHIPPER".equals(role)) {
+            hidePreviousLabel(citizenId);
+            hidePreviousLabel(plate);
+            hidePreviousLabel(address);
+        }
+        passwordLabel.setVisibility(View.GONE);
         wrapInput(name, "Họ và tên");
         wrapInput(phone, "Số điện thoại");
         wrapInput(email, "Email");
@@ -129,6 +134,14 @@ public class AddEmployeeActivity extends AppCompatActivity {
             wrapInput(address, "Địa chỉ");
         }
         wrapInput(password, "Mật khẩu đăng nhập");
+    }
+
+    private void hidePreviousLabel(EditText e) {
+        LinearLayout parent = (LinearLayout) e.getParent();
+        int index = parent.indexOfChild(e);
+        if (index > 0 && parent.getChildAt(index - 1) instanceof TextView) {
+            parent.getChildAt(index - 1).setVisibility(View.GONE);
+        }
     }
 
     private void wrapInput(EditText e, String hint) {
@@ -142,18 +155,19 @@ public class AddEmployeeActivity extends AppCompatActivity {
         box.setHint(hint);
         box.setHintTextColor(android.content.res.ColorStateList.valueOf(0xff1565c0));
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
-        lp.topMargin = dp(6);
-        lp.bottomMargin = dp(8);
+        lp.topMargin = dp(14);
+        lp.bottomMargin = dp(14);
         parent.addView(box, index, lp);
         e.setHint(null);
         e.setBackground(null);
+        e.setPadding(dp(16), dp(14), dp(16), dp(14));
         box.addView(e, new LinearLayout.LayoutParams(-1, -2));
     }
 
     private void styleInput(EditText e) {
         e.setTextColor(Color.BLACK);
         e.setHintTextColor(0xff888888);
-        e.setTextSize(15);
+        e.setTextSize(16);
         e.setSingleLine(true);
         e.setPadding(dp(12), dp(12), dp(12), dp(12));
         e.setBackgroundResource(R.drawable.bg_edit_text);
