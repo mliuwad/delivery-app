@@ -1,5 +1,6 @@
 const {test, before, after, beforeEach} = require("node:test");
 const fs = require("node:fs");
+const path = require("node:path");
 const assert = require("node:assert/strict");
 const {initializeTestEnvironment, assertSucceeds, assertFails} =
   require("@firebase/rules-unit-testing");
@@ -8,7 +9,7 @@ let env;
 before(async () => {
   env = await initializeTestEnvironment({
     projectId: "demo-delivery-rules",
-    firestore: {host: "127.0.0.1", port: 8085, rules: fs.readFileSync("firestore.rules", "utf8")}
+    firestore: {host: "127.0.0.1", port: 8085, rules: fs.readFileSync(path.join(__dirname, "../../firestore.rules"), "utf8")}
   });
 });
 after(async () => { if (env) await env.cleanup(); });
