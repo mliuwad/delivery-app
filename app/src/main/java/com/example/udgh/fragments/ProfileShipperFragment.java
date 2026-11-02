@@ -1,6 +1,7 @@
 package com.example.udgh.fragments;
 
 import com.example.udgh.R;
+import com.example.udgh.BuildConfig;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
@@ -67,7 +68,6 @@ public class ProfileShipperFragment extends Fragment {
     private ShipperDetail currentShipperDetail;
     private boolean isEditing = false;
 
-    private static final String IMGBB_API_KEY = "dee690b746c3dc19370022b139ad6696";
 
     private final ActivityResultLauncher<Intent> pickImageLauncher =
             registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),
@@ -151,7 +151,7 @@ public class ProfileShipperFragment extends Fragment {
 
             RequestBody requestBody = new MultipartBody.Builder()
                     .setType(MultipartBody.FORM)
-                    .addFormDataPart("key", IMGBB_API_KEY)
+                    .addFormDataPart("key", BuildConfig.IMGBB_API_KEY)
                     .addFormDataPart("image", base64Image)
                     .build();
 
