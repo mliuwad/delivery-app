@@ -21,7 +21,8 @@ service cloud.firestore {
     }
 
     match /USERS/{uid} {
-      // Only an active admin may create Creator/Shipper profiles.\n      // Firebase Authentication provisioning is separate from Firestore Rules.
+      // Only an active admin may create Creator/Shipper profiles.
+      // Firebase Authentication provisioning is separate from Firestore Rules.
       allow get: if own(uid) || admin();
       allow list: if admin();
       allow create: if admin() && uid != request.auth.uid
@@ -31,12 +32,18 @@ service cloud.firestore {
         && request.resource.data.status in ["ACTIVE", "INACTIVE"]
         && request.resource.data.email is string;
       allow delete: if false;
-      allow update: if admin()
+      allow update: if (own(uid) && role("SHIPPER")
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(["fullName", "phone", "avatarUrl"])
+        && request.resource.data.fullName is string
+        && request.resource.data.phone is string
+        && request.resource.data.avatarUrl is string)
+        || (admin()
         && request.resource.data.role == resource.data.role
         && request.resource.data.email == resource.data.email
         && request.resource.data.createdAt == resource.data.createdAt
         && request.resource.data.diff(resource.data).affectedKeys()
-             .hasOnly(["fullName", "phone", "status", "avatarUrl"]);
+             .hasOnly(["fullName", "phone", "status", "avatarUrl"]));
 
       match /SHIPPER_DETAILS/{detailId} {
         allow read: if admin() || (own(uid) && role("SHIPPER"));
