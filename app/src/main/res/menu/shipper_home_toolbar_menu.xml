@@ -1,8 +1,14 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <item android:id="@+id/menuNotifications"
-        android:icon="@drawable/icon_notifi"
+    <TextView
+        android:id="@+id/textView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="â" />
+    <item
+        android:id="@+id/menuNotifications"
+        android:icon="@drawable/ic_notification"
         android:title="Thông báo đơn mới"
         app:showAsAction="always" />
     <item
