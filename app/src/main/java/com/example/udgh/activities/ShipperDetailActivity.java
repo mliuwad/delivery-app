@@ -36,6 +36,8 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ByteArrayOutputStream;
+import java.util.concurrent.TimeUnit;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -197,6 +199,10 @@ public class ShipperDetailActivity extends AppCompatActivity {
 
     // ==================== UPLOAD AVATAR TO IMGBB ====================
     private void uploadAvatarToImgBB(Uri imageUri) {
+        if (BuildConfig.IMGBB_API_KEY == null || BuildConfig.IMGBB_API_KEY.trim().isEmpty()) {
+            Toast.makeText(this, "Chưa cấu hình ImgBB API Key", Toast.LENGTH_LONG).show();
+            return;
+        }
         progressDialog = new ProgressDialog(this);
         progressDialog.setMessage("Đang upload ảnh...");
         progressDialog.setCancelable(false);
@@ -209,13 +215,23 @@ public class ShipperDetailActivity extends AppCompatActivity {
                 Toast.makeText(this, "Không thể đọc file ảnh", Toast.LENGTH_SHORT).show();
                 return;
             }
-            byte[] imageBytes = new byte[inputStream.available()];
-            inputStream.read(imageBytes);
-            inputStream.close();
+            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+            try (InputStream source = inputStream) {
+                byte[] chunk = new byte[8192];
+                int count;
+                while ((count = source.read(chunk)) != -1) {
+                    buffer.write(chunk, 0, count);
+                    if (buffer.size() > 10 * 1024 * 1024)
+                        throw new IOException("Ảnh quá lớn (tối đa 10 MB)");
+                }
+            }
+            byte[] imageBytes = buffer.toByteArray();
+            if (imageBytes.length == 0) throw new IOException("Ảnh trống");
 
-            String base64Image = Base64.encodeToString(imageBytes, Base64.DEFAULT);
+            String base64Image = Base64.encodeToString(imageBytes, Base64.NO_WRAP);
 
-            OkHttpClient client = new OkHttpClient();
+            OkHttpClient client = new OkHttpClient.Builder()
+                    .callTimeout(45, TimeUnit.SECONDS).build();
 
             RequestBody requestBody = new MultipartBody.Builder()
                     .setType(MultipartBody.FORM)
