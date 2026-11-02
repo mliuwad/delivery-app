@@ -12,7 +12,7 @@
 
 **Thông báo:** màn hình thông báo trong ứng dụng đọc danh sách đơn đang chờ từ Firestore. **Không sử dụng FCM, push notification hay Cloud Functions.**
 
-**Cấp tài khoản:** không có tự đăng ký. Người quản trị dự án tạo tài khoản trong Firebase Authentication và hồ sơ `USERS/{uid}` bằng Firebase Console. Nút thêm nhân viên trong app chỉ hiển thị hướng dẫn; không tạo tài khoản. Xem [hướng dẫn](docs/account-provisioning.md).
+**Cấp tài khoản:** không có tự đăng ký. Admin đầu tiên được khởi tạo thủ công bằng Firebase Console. Sau đó Admin có thể dùng màn hình Thêm Creator/Shipper để tạo tài khoản Firebase Authentication qua phiên Auth phụ và ghi hồ sơ `USERS/{uid}` vào Firestore. Đây chỉ là luồng demo phía client, không phải giải pháp cấp quyền production. Xem [hướng dẫn](docs/account-provisioning.md).
 
 ## Công nghệ và kiến trúc
 
@@ -44,7 +44,7 @@ ORDERS/{orderId}                       creatorId, shipperId, status, deliveryFee
 SALARIES/{salaryId}                    shipperID, month, year, totalOrders, totalSalary...
 ```
 
-Trạng thái đơn chính: `PENDING` (hoặc dữ liệu cũ `WAITING`), `DELIVERING`, `COMPLETED`, `CANCELLED`.
+Trạng thái tài khoản: `ACTIVE` / `INACTIVE` (dữ liệu cũ `LOCKED` cần được chuyển đổi trước khi áp dụng Rules mới).\n\nTrạng thái đơn chính: `PENDING` (hoặc dữ liệu cũ `WAITING`), `DELIVERING`, `COMPLETED`, `CANCELLED`.
 
 ## Chạy ứng dụng
 
