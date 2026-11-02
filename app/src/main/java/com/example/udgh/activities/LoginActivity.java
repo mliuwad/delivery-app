@@ -24,7 +24,7 @@ public class LoginActivity extends AppCompatActivity {
     private EditText edtUsername, edtPassword;
     private MaterialButton btnLogin;
     private ProgressBar progressBar;
-    private TextView tvGoToRegister, tvForgotPassword;
+    private TextView tvForgotPassword;
     private LoginViewModel viewModel;
 
     @Override
@@ -36,15 +36,14 @@ public class LoginActivity extends AppCompatActivity {
         edtPassword = findViewById(R.id.edtPassword);
         btnLogin = findViewById(R.id.btnLogin);
         progressBar = findViewById(R.id.progressBar);
-        tvGoToRegister = findViewById(R.id.tvGoToRegister);
         tvForgotPassword = findViewById(R.id.tvForgotPassword);
 
         viewModel = new ViewModelProvider(this).get(LoginViewModel.class);
         observeViewModel();
 
         btnLogin.setOnClickListener(v -> loginUser());
-        tvGoToRegister.setOnClickListener(v ->
-                startActivity(new Intent(this, RegisterActivity.class)));
+        // Tài khoản do quản trị viên cấp; không hỗ trợ tự đăng ký.
+        findViewById(R.id.tvGoToRegister).setVisibility(View.GONE);
         tvForgotPassword.setOnClickListener(v -> showForgotPasswordDialog());
     }
 
