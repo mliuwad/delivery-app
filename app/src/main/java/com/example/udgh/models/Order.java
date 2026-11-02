@@ -23,6 +23,7 @@ public class Order {
     private double codAmount;
     private double totalProductValue;
     private int itemCount;
+    private String productPreviewName;
     private int totalQuantity;
     private double totalAmount;
     private String status;
@@ -88,6 +89,9 @@ public class Order {
 
     public double getTotalProductValue() { return totalProductValue; }
     public void setTotalProductValue(double totalProductValue) { this.totalProductValue = totalProductValue; }
+
+    public String getProductPreviewName() { return productPreviewName; }
+    public void setProductPreviewName(String productPreviewName) { this.productPreviewName = productPreviewName; }
 
     public int getItemCount() { return itemCount; }
     public void setItemCount(int itemCount) { this.itemCount = itemCount; }
