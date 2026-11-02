@@ -15,6 +15,7 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.example.udgh.R;
 import com.example.udgh.models.User;
 import com.example.udgh.utils.RoleAccess;
+import com.example.udgh.utils.AppConstants;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.android.material.appbar.MaterialToolbar;
@@ -151,7 +152,7 @@ public class CreatorManagementActivity extends AppCompatActivity {
     private void toggle(User u) {
         boolean active = "ACTIVE".equalsIgnoreCase(u.getStatus());
         db.collection("USERS").document(u.getUserId())
-            .update("status", active ? "INACTIVE" : "ACTIVE")
+            .update("status", active ? AppConstants.AccountStatus.INACTIVE : AppConstants.AccountStatus.ACTIVE)
             .addOnSuccessListener(v -> {
                 Toast.makeText(this, active ? "Đã khóa tài khoản" : "Đã mở khóa tài khoản",
                     Toast.LENGTH_SHORT).show();
