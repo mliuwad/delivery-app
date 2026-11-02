@@ -141,6 +141,10 @@ public class HomeShipperActivity extends AppCompatActivity {
 
     @Override public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         int id = item.getItemId();
+        if (id == R.id.menuNotifications) {
+            startActivity(new Intent(this, NotificationActivity.class));
+            return true;
+        }
         if (id == R.id.menuLogout) {
             logout();
             return true;

@@ -41,6 +41,9 @@ public class MainActivity extends AppCompatActivity {
         MaterialCardView cardSalary = findViewById(R.id.cardSalary);
         MaterialCardView cardStatistics = findViewById(R.id.cardStatistics);
 
+        findViewById(R.id.cardCreator).setOnClickListener(v -> open(CreatorManagementActivity.class,
+                "Đang mở Quản lý nhân viên tạo đơn..."));
+
         cardProduct.setOnClickListener(v -> open(ProductManagementActivity.class,
                 "Đang mở Quản lý sản phẩm..."));
         cardOrder.setOnClickListener(v -> open(OrderManagementActivity.class,

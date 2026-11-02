@@ -1,6 +1,10 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
+    <item android:id="@+id/menuNotifications"
+        android:icon="@drawable/icon_notifi"
+        android:title="Thông báo đơn mới"
+        app:showAsAction="always" />
     <item
         android:id="@+id/menuProfile"
         android:icon="@drawable/delivery_man"
