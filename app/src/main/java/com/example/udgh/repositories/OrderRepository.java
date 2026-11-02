@@ -255,7 +255,7 @@ public class OrderRepository {
             detailData.put("quantity", detail.getQuantity());
             detailData.put("imageUrl", detail.getImageUrl() != null ? detail.getImageUrl() : "");
 
-            String detailId = String.format(java.util.Locale.ROOT, "ODT%03d", i + 1);
+            String detailId = orderRef.collection("ORDER_DETAILS").document().getId();
             batch.set(orderRef.collection("ORDER_DETAILS").document(detailId), detailData);
         }
 
