@@ -1,90 +1,86 @@
-# Ứng dụng quản lý giao hàng (Android Java)
+# Ứng dụng quản lý giao hàng
 
-Ứng dụng trình diễn quản lý giao hàng nội bộ cho **Admin**, **Creator** và **Shipper**. Dự án thực hành Android, **chưa phải ứng dụng môi trường thực tế**.
+Ứng dụng Android hỗ trợ quản lý sản phẩm, tạo đơn và theo dõi quá trình giao hàng. Hệ thống được xây dựng với ba vai trò: quản trị viên (Admin), người tạo đơn (Creator) và nhân viên giao hàng (Shipper).
 
-## Chức năng
+Dự án sử dụng **Java và Firebase**, tập trung vào xử lý nghiệp vụ theo vai trò, lưu trữ dữ liệu trên Firestore và tổ chức mã nguồn theo hướng MVVM.
+
+## Chức năng chính
 
 | Vai trò | Chức năng |
 | --- | --- |
-| Admin | Quản lý nhân viên, sản phẩm, đơn hàng, lương và thống kê |
-| Creator | Tạo, theo dõi và hủy đơn đủ điều kiện |
-| Shipper | Xem đơn chờ nhận, nhận đơn, cập nhật giao hàng và xem thu nhập |
+| **Admin** | Quản lý tài khoản Creator/Shipper, sản phẩm, đơn hàng; theo dõi thống kê và xác nhận thanh toán lương |
+| **Creator** | Quản lý sản phẩm của mình, tạo đơn, xem trạng thái và hủy đơn khi chưa được nhận |
+| **Shipper** | Xem đơn đang chờ, nhận đơn, xác nhận giao thành công, xem thu nhập và cập nhật hồ sơ |
 
-**Thông báo:** màn hình thông báo trong ứng dụng đọc danh sách đơn đang chờ từ Firestore. **Không sử dụng FCM, thông báo đẩy hay Cloud Functions.**
+Đơn hàng đi qua các trạng thái chính: **Chờ nhận → Đang giao → Hoàn thành**. Creator có thể hủy đơn khi đơn vẫn đang chờ nhận.
 
-**Cấp tài khoản:** không có tự đăng ký. Admin đầu tiên được khởi tạo thủ công bằng Firebase Console. Sau đó Admin có thể dùng màn hình Thêm Creator/Shipper để tạo tài khoản Firebase Authentication qua phiên Auth phụ và ghi hồ sơ `USERS/{uid}` vào Firestore. Đây chỉ là luồng trình diễn phía client, không phải giải pháp cấp quyền môi trường thực tế. Xem [hướng dẫn](docs/account-provisioning.md).
+Màn hình thông báo hiện hiển thị dữ liệu đơn hàng từ Firestore, chưa tích hợp thông báo đẩy FCM.
 
-## Công nghệ và kiến trúc
+## Công nghệ sử dụng
 
-- Java, Android XML, AndroidX, ViewModel/LiveData, mẫu Repository (đang được áp dụng từng phần)
-- Firebase Authentication, Cloud Firestore
-- Glide, OkHttp, osmdroid / OpenStreetMap
-- JUnit, Mockito và Firebase Firestore Emulator kiểm thử quy tắc bảo mật
+- **Ngôn ngữ:** Java
+- **Giao diện:** Android XML, Material Components, RecyclerView
+- **Kiến trúc:** ViewModel, LiveData, Repository (áp dụng cho các phần đã tái cấu trúc)
+- **Dữ liệu và xác thực:** Firebase Authentication, Cloud Firestore
+- **Thư viện:** Glide, OkHttp, osmdroid (OpenStreetMap)
+- **Kiểm thử:** JUnit, Mockito, Firebase Emulator
 
-```text
-Activity / Fragment (UI)
-        |
-     ViewModel
-        |
-     Repository
-        |
- Firebase Auth / Firestore
-```
+## Cấu trúc dữ liệu
 
-Một số màn hình vẫn truy cập Firestore trực tiếp; kiến trúc chưa được chuẩn hóa hoàn toàn.
+Các collection chính trên Cloud Firestore:
 
-## Cấu trúc Firestore
+| Collection | Mục đích |
+| --- | --- |
+| `USERS` | Thông tin tài khoản và vai trò |
+| `USERS/{uid}/SHIPPER_DETAILS` | Hồ sơ bổ sung của Shipper |
+| `PRODUCTS` | Sản phẩm |
+| `ORDERS` | Đơn hàng và trạng thái giao |
+| `ORDERS/{orderId}/ORDER_DETAILS` | Chi tiết sản phẩm trong đơn |
+| `SALARIES` | Tổng hợp thu nhập theo tháng của Shipper |
 
-```text
-USERS/{uid}                            role, status, fullName, email, phone...
-  SHIPPER_DETAILS/{uid}                 shipperId, licensePlate, address...
-PRODUCTS/{productId}                   thông tin sản phẩm
-ORDERS/{orderId}                       creatorId, shipperId, status, deliveryFee...
-  ORDER_DETAILS/{detailId}             sản phẩm và số lượng
-SALARIES/{salaryId}                    shipperID, month, year, totalOrders, totalSalary...
-```
+## Cài đặt và chạy thử
 
-Trạng thái tài khoản: `ACTIVE` / `INACTIVE` (dữ liệu cũ `LOCKED` cần được chuyển đổi trước khi áp dụng Rules mới).\n\nTrạng thái đơn chính: `PENDING` (hoặc dữ liệu cũ `WAITING`), `DELIVERING`, `COMPLETED`, `CANCELLED`.
+**Yêu cầu:** Android Studio, môi trường Android SDK phù hợp và một dự án Firebase dùng để thử nghiệm.
 
-## Chạy ứng dụng
+1. Sao chép repository và mở bằng Android Studio.
+2. Bật **Authentication (Email/Password)** và **Cloud Firestore** trong Firebase Console.
+3. Tải `google-services.json` từ dự án Firebase của bạn và đặt tại `app/google-services.json`.
+4. Nếu sử dụng chức năng tải ảnh lên ImgBB, thêm dòng sau vào `local.properties`:
 
-1. Sao chép kho mã nguồn, mở thư mục bằng Android Studio.
-2. Tạo hoặc chọn dự án Firebase thử nghiệm, bật **Email/Password Authentication** và Firestore.
-3. Đặt file `google-services.json` đúng vị trí `app/google-services.json` theo dự án Firebase của bạn.
-4. Nếu dùng chức năng tải ảnh lên ImgBB, thêm `IMGBB_API_KEY=YOUR_KEY` vào `local.properties` (không commit).
-5. Tạo tài khoản thử nghiệm theo [hướng dẫn cấp tài khoản](docs/account-provisioning.md).
-6. Gradle Sync, **Build > Make Project**, sau đó chạy app.
+   ```properties
+   IMGBB_API_KEY=YOUR_API_KEY
+   ```
 
-Không đưa thông tin đăng nhập, khóa dịch vụ hoặc giấy tờ cá nhân thật vào repo.
+5. Khởi tạo tài khoản quản trị theo [hướng dẫn cấp tài khoản](docs/account-provisioning.md).
+6. Đồng bộ Gradle, build và chạy ứng dụng trên thiết bị hoặc máy ảo Android.
+
+Không sử dụng dữ liệu cá nhân thật khi thử nghiệm.
 
 ## Kiểm thử
 
-**JUnit (10 bài test OrderViewModel):**
+Chạy unit test trên Windows:
+
 ```powershell
 .\gradlew.bat :app:testDebugUnitTest
 ```
 
-**Firestore Emulator (11 bài test allow/deny):** yêu cầu Node.js, Java và Firebase CLI. Chạy ở thư mục gốc repo:
+Kiểm thử Firestore Security Rules bằng Emulator (cần Node.js, Java và Firebase CLI):
 
 ```powershell
 npm --prefix tests/firestore install
 firebase emulators:exec --only firestore "npm --prefix tests/firestore test"
 ```
 
-Các test được thêm vào mã nguồn nhưng **chưa được thực thi/xác nhận đạt** trong môi trường Android/Firebase thật. Rules tại `firestore.rules` đã bổ sung quyền cho luồng đơn hàng, lương, hồ sơ và sản phẩm, nhưng **chưa được kiểm thử đầy đủ**. Không áp dụng trực tiếp lên dự án Firebase đang sử dụng trước khi chạy Emulator và kiểm thử tích hợp. Việc tính lương ở máy khách còn giới hạn bảo mật, không thể xác thực hoàn toàn chỉ bằng Rules.
+Các bài kiểm thử có trong repository nhưng **chưa được xác nhận chạy thành công sau những thay đổi gần đây**.
 
-## Giới hạn và bảo mật
+## Tình trạng dự án
 
-- Firebase Spark có thể dùng cho trình diễn theo giới hạn miễn phí; không cần Cloud Functions.
-- Giao diện ẩn đăng ký không thay thế được Firestore Security Rules.
-- Key ImgBB cũ từng nằm trong Git history; **chủ tài khoản phải thu hồi trực tiếp tại ImgBB**. Không thể xác nhận đã thu hồi chỉ từ repository. `BuildConfig` không bảo vệ bí mật khỏi việc trích xuất APK.
-- Chưa xác nhận build và kiểm thử từ đầu đến cuối sau những thay đổi gần đây.
-- Khi Shipper hoàn thành đơn, logic trình diễn cộng `deliveryFee` vào tổng lương tháng; không đại diện cho quy trình lương thực tế.
+Dự án phục vụ học tập và xây dựng portfolio, chưa triển khai cho người dùng thực tế. Một số màn hình vẫn thao tác trực tiếp với Firestore thay vì đi qua Repository.
 
-## Hình ảnh
+Quy tắc phân quyền được lưu trong [`firestore.rules`](firestore.rules), nhưng cần kiểm thử bằng Emulator trước khi áp dụng. Phần tính và cập nhật lương hiện thực hiện từ ứng dụng Android, chưa có backend đáng tin cậy để xác minh toàn bộ giao dịch.
 
-Ảnh chụp màn hình chưa được thêm. Chỉ bổ sung ảnh chụp từ app đã chạy, không dùng ảnh giả lập tính năng chưa hoạt động.
+## Ghi chú
 
-## Mục tiêu dự án
-
-Thực hành xây dựng ứng dụng Android đa vai trò, quản lý dữ liệu Firestore, tổ chức mã theo MVVM/Repository và kiểm thử phân quyền.
+- Admin đầu tiên cần được tạo thủ công trong Firebase Console; các tài khoản Creator/Shipper được cấp từ ứng dụng.
+- API key ImgBB từng xuất hiện trong lịch sử Git. Key cũ cần được thu hồi tại ImgBB; không nên tái sử dụng.
+- Ảnh chụp các màn hình ứng dụng sẽ được bổ sung sau khi hoàn tất kiểm thử giao diện.
