@@ -152,8 +152,8 @@ public class SalaryManagement extends AppCompatActivity {
             monthList.add("Tháng " + month + "/" + selectedYear);
         }
 
-        ArrayAdapter<String> spinnerAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, monthList);
-        spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        ArrayAdapter<String> spinnerAdapter = new ArrayAdapter<>(this, R.layout.spinner_item_black, monthList);
+        spinnerAdapter.setDropDownViewResource(R.layout.spinner_dropdown_item_black);
         spMonth.setAdapter(spinnerAdapter);
         spMonth.setSelection(selectedMonth - 1);
 
