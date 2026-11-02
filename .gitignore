@@ -13,3 +13,19 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Firebase / thông tin cấu hình riêng
+/google-services.json
+/app/google-services.json
+**/serviceAccountKey.json
+**/*service-account*.json
+.env
+.env.*
+!.env.example
+
+# Tệp sinh khi xây dựng và kiểm thử
+/app/build/
+*.apk
+*.aab
+/node_modules/
+/tests/firestore/node_modules/
