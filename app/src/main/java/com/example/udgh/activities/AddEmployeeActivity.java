@@ -104,7 +104,18 @@ public class AddEmployeeActivity extends AppCompatActivity {
                 e.setEnabled(true);
                 styleInput(e);
             }
-            findViewById(R.id.txtTotalOrders).setVisibility(android.view.View.GONE);
+            View orders = findViewById(R.id.txtTotalOrders);
+            LinearLayout ordersParent = (LinearLayout) orders.getParent();
+            int ordersIndex = ordersParent.indexOfChild(orders);
+            orders.setVisibility(View.GONE);
+            if (ordersIndex > 0) {
+                View ordersLabel = ordersParent.getChildAt(ordersIndex - 1);
+                ordersLabel.setVisibility(View.GONE);
+                if (ordersIndex > 1) {
+                    View separator = ordersParent.getChildAt(ordersIndex - 2);
+                    if (!(separator instanceof TextView)) separator.setVisibility(View.GONE);
+                }
+            }
             findViewById(R.id.txtSalary).setVisibility(android.view.View.GONE);
             findViewById(R.id.btnDelete).setVisibility(android.view.View.GONE);
         }
